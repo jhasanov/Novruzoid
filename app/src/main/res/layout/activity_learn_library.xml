@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="andir.novruzoid.LearnLibrary">
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Skip"
+        android:id="@+id/SkipBtn"
+        android:onClick="skip"
+        android:layout_below="@+id/linearLayout"
+        android:layout_toLeftOf="@+id/NextBtn"
+        android:layout_alignBottom="@+id/classTypeEB" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next>>"
+        android:id="@+id/NextBtn"
+        android:onClick="next"
+        android:layout_below="@+id/linearLayout"
+        android:layout_alignRight="@+id/linearLayout"
+        android:layout_alignEnd="@+id/linearLayout"
+        android:layout_alignBottom="@+id/classTypeEB" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        android:id="@+id/SaveBtn"
+        android:onClick="save"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/linearLayout"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true">
+
+        <ImageView
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:id="@+id/segmentView"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:background="@android:color/darker_gray" />
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="181dp"
+            android:layout_alignTop="@+id/segmentView"
+            android:layout_toRightOf="@+id/segmentView"
+            android:layout_toEndOf="@+id/segmentView"
+            android:id="@+id/radioGroup"
+            android:layout_alignBottom="@+id/segmentView">
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0-9 &amp; special"
+                android:id="@+id/digitRB"
+                android:layout_gravity="left"
+                android:checked="false"
+                android:onClick="changeFocus" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="letter"
+                android:id="@+id/letterRB"
+                android:layout_gravity="left"
+                android:onClick="changeFocus" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CAPITAL"
+                android:id="@+id/capitalRB"
+                android:layout_gravity="left"
+                android:onClick="changeFocus" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="image"
+                android:id="@+id/imageRB"
+                android:layout_gravity="left"
+                android:onClick="changeFocus" />
+        </RadioGroup>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Document"
+        android:id="@+id/textView"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/NextBtn" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/docTypeEB"
+        android:layout_below="@+id/classTypeEB"
+        android:layout_gravity="left"
+        android:layout_toRightOf="@+id/textView"
+        android:layout_alignLeft="@+id/classTypeEB"
+        android:layout_toLeftOf="@+id/SkipBtn" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Class"
+        android:id="@+id/textView2"
+        android:layout_below="@+id/linearLayout"
+        android:gravity="center_vertical|right"
+        android:layout_alignRight="@+id/textView"
+        android:layout_alignEnd="@+id/textView" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/classTypeEB"
+        android:layout_gravity="left"
+        android:layout_below="@+id/linearLayout"
+        android:layout_toRightOf="@+id/textView"
+        android:layout_toLeftOf="@+id/SkipBtn"
+        android:gravity="center_vertical" />
+</RelativeLayout>

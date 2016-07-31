@@ -1,0 +1,40 @@
+apply plugin: 'com.android.model.application'
+
+model {
+    android {
+        compileSdkVersion 19
+        buildToolsVersion "23.0.2"
+
+        defaultConfig {
+            applicationId "andir.novruzoid"
+            minSdkVersion.apiLevel 16
+            targetSdkVersion.apiLevel 19
+            versionCode 1
+            versionName "1.0"
+        }
+
+    }
+
+    android.buildTypes {
+        release {
+            shrinkResources true
+            useProguard true
+            proguardFiles.add(file('proguard-rules.txt'))
+            //signingConfig = $("android.signingConfigs.release")
+        }
+    }
+
+    android.ndk {
+        moduleName "imageproc-jni"
+        ldLibs.addAll(["android", "log"])
+    }
+
+}
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:19.1.0'
+    compile files('libs/json_simple-1.1.jar')
+    compile files('libs/dropbox-android-sdk-1.6.3.jar')
+}
