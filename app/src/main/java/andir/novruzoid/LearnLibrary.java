@@ -24,10 +24,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 
+import image.ImageTransform;
 import image.segment.elements.Symbol;
 import ocr.LabelManager;
 
@@ -46,6 +48,7 @@ public class LearnLibrary extends Activity {
     private SimpleDateFormat sdf = new SimpleDateFormat("ddMMyy-HHmmss");
     private boolean bMapsLoaded;
     private String formName = "";
+    private ArrayList<double[]> featureList;
 
     // Info for Dropbox access
     final static private String APP_KEY = "ywci2ypov61gkoo";
@@ -161,6 +164,7 @@ public class LearnLibrary extends Activity {
             if ((formName != null) && (formName.length()>1)){
                 bMapsLoaded = LabelManager.loadHashes(formName);
             }
+            featureList = LabelManager.loadFeatures(formName + "_features.dat");
         }
 
         if ((charDesc != null) || (charDesc.length()>0) || (pixelArrStr != null)) {
@@ -193,10 +197,13 @@ public class LearnLibrary extends Activity {
         String timeStr = "_"+sdf.format(dateTime);
 
         // Save all characted data
-        writeFile("digits"+docType+timeStr+".txt",digits);
-        writeFile("letters"+docType+timeStr+".txt",letters);
-        writeFile("capitals"+docType+timeStr+".txt",capitals);
-        writeFile("images"+docType+timeStr+".txt",images);
+        writeFile("digits" + docType + timeStr + ".dat", digits);
+        writeFile("letters" + docType + timeStr + ".dat", letters);
+        writeFile("capitals" + docType + timeStr + ".dat", capitals);
+        writeFile("images" + docType + timeStr + ".dat", images);
+
+        // Save all features
+        LabelManager.saveFeatures(formName, featureList);
 
         // Classes with their IDs will be saved in corresponding files
         LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.DIGITS);
@@ -205,14 +212,14 @@ public class LearnLibrary extends Activity {
         LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.IMAGES);
 
         // Upload to Dropbox
-        uploadToDropbox(formName+"_digits_dict"+".txt");
-        uploadToDropbox(formName+"_letters_dict"+".txt");
-        uploadToDropbox(formName+"_capitals_dict"+".txt");
-        uploadToDropbox(formName+"_images_dict"+".txt");
-        uploadToDropbox("digits"+docType+timeStr+".txt");
-        uploadToDropbox("letters"+docType+timeStr+".txt");
-        uploadToDropbox("capitals"+docType+timeStr+".txt");
-        uploadToDropbox("images"+docType+timeStr+".txt");
+        uploadToDropbox(formName + "_digits_dict" + ".dat");
+        uploadToDropbox(formName + "_letters_dict" + ".dat");
+        uploadToDropbox(formName + "_capitals_dict" + ".dat");
+        uploadToDropbox(formName + "_images_dict" + ".dat");
+        uploadToDropbox("digits" + docType + timeStr + ".dat");
+        uploadToDropbox("letters" + docType + timeStr + ".dat");
+        uploadToDropbox("capitals" + docType + timeStr + ".dat");
+        uploadToDropbox("images" + docType + timeStr + ".dat");
 
         setResult(RESULT_OK);
     }
@@ -231,7 +238,10 @@ public class LearnLibrary extends Activity {
             int h = pixels[0].length;
             int imgW = segmentView.getWidth();
             int imgH = segmentView.getHeight();
-            int scale = Math.min(imgW / w, imgH / h);
+
+            // get half of it (keep another half for resize function)
+            int scale = Math.min(imgW / 2 * w, imgH / 2 * h);
+            //int scale = Math.min(imgW / w, imgH / h);
             Log.i(getClass().toString(),"next: w="+w+" h="+h+" imgW="+imgW+" imgH="+imgH+" scale="+scale);
 
             Bitmap bmp = Bitmap.createBitmap(w*scale, h*scale, Bitmap.Config.ARGB_8888);
@@ -246,12 +256,23 @@ public class LearnLibrary extends Activity {
             // This string will be written to a file.
             // Every line starts with a class type, followed with pixel size & values
             pixelArrStr = w+" "+h;
+
             // -------------------------------------------------
             for (int i = 0; i < w; i++) {
                 for (int j = 0; j < h; j++) {
                     pixelArrStr += " "+pixels[i][j]; // pixel data is added (delimiter is ' ')
                     if (pixels[i][j] != 0)
                         canvas.drawRect(i * scale, j * scale, (i + 1) * scale, (j + 1) * scale, paint);
+                }
+            }
+
+            // now draw home-made resized image
+            ImageTransform imtrans = new ImageTransform();
+            double[][] newImg = imtrans.resize(pixels, ImageTransform.InterpolationMode.BILINEAR, imgW / 2, imgH / 2);
+            for (int i = 0; i < newImg.length; i++) {
+                for (int j = 0; j < newImg[0].length; j++) {
+                    if (newImg[i][j] != 0)
+                        canvas.drawRect(imgW / 2 + i, imgH / 2 + j, (i + 1), (j + 1), paint);
                 }
             }
 
