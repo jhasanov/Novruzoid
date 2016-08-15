@@ -32,23 +32,25 @@ import java.util.Iterator;
 import image.ImageTransform;
 import image.segment.elements.Symbol;
 import ocr.LabelManager;
+import utils.MatrixOperations;
 
 public class LearnLibrary extends Activity {
 
     // UI variables
     private ImageView segmentView;
-    private RadioButton digitRB,letterRB,capitalRB,imageRB;
+    private RadioButton digitRB, letterRB, capitalRB, imageRB;
     private EditText docTypeEB, classTypeEB;
 
     // All symbols and iterator
     //private ArrayList<Symbol> symbolList;
     private Iterator symbolIt;
     // Variables to save class parameters
-    private String pixelArrStr,digits, letters, capitals, images;
+    private String digits, letters, capitals, images;
     private SimpleDateFormat sdf = new SimpleDateFormat("ddMMyy-HHmmss");
     private boolean bMapsLoaded;
     private String formName = "";
-    private ArrayList<double[]> featureList;
+    private ArrayList<double[]> digitFeatureList, letterFeatureList, capitalFeatureList, imageFeatureList;
+    private double[] features;
 
     // Info for Dropbox access
     final static private String APP_KEY = "ywci2ypov61gkoo";
@@ -78,21 +80,19 @@ public class LearnLibrary extends Activity {
             Log.i(getClass().toString(), "onCreate() - Loading symbols");
             //symbolList = (ArrayList<Symbol>) getIntent().getSerializableExtra("andir.novruzoid.SymbolList");
             //Log.i(getClass().toString(), "onCreate() - Symbols: "+symbolList.size());
-            }
-        catch (Exception ex) {
-            Log.e(getClass().toString(), "onCreate() - problem with SYMBOLS : "+ex);
+        } catch (Exception ex) {
+            Log.e(getClass().toString(), "onCreate() - problem with SYMBOLS : " + ex);
         }
-        }
+    }
 
     @Override
     protected void onStart() {
-        Log.d(getClass().toString(),"onStart called");
+        Log.d(getClass().toString(), "onStart called");
         super.onStart();
         try {
             init();
-        }
-        catch (Exception ex) {
-            Log.e(getClass().toString(), "onStart() : "+ex);
+        } catch (Exception ex) {
+            Log.e(getClass().toString(), "onStart() : " + ex);
         }
     }
 
@@ -100,7 +100,7 @@ public class LearnLibrary extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(getClass().toString(),"onResume called. bDropbox="+bDropboxGranted);
+        Log.d(getClass().toString(), "onResume called. bDropbox=" + bDropboxGranted);
 
         if (bDropboxGranted && mDBApi.getSession().authenticationSuccessful()) {
             try {
@@ -120,13 +120,13 @@ public class LearnLibrary extends Activity {
         AlertDialog.Builder confirmExit = new AlertDialog.Builder(this);
         confirmExit
                 .setMessage("Are you sure?")
-                .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         LearnLibrary.this.finish();
                     }
                 })
-                .setNegativeButton("No",new DialogInterface.OnClickListener() {
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
@@ -138,14 +138,13 @@ public class LearnLibrary extends Activity {
 
     private void init() {
         try {
-            Log.e(getClass().toString(),"init() 1");
+            Log.e(getClass().toString(), "init() 1");
             symbolIt = LabelManager.symbolList.iterator();
-            Log.e(getClass().toString(),"init() : "+symbolIt);
+            Log.e(getClass().toString(), "init() : " + symbolIt);
             showNext();
-            Log.e(getClass().toString(),"init() 3");
-        }
-        catch (Exception ex) {
-            Log.e(getClass().toString(),"problem in init(): "+ex);
+            Log.e(getClass().toString(), "init() 3");
+        } catch (Exception ex) {
+            Log.e(getClass().toString(), "problem in init(): " + ex);
         }
 
     }
@@ -161,23 +160,27 @@ public class LearnLibrary extends Activity {
         // Check if all maps loaded
         if (!bMapsLoaded) {
             formName = docTypeEB.getText().toString();
-            if ((formName != null) && (formName.length()>1)){
+            if ((formName != null) && (formName.length() > 1)) {
                 bMapsLoaded = LabelManager.loadHashes(formName);
+                digitFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.DIGITS);
+                capitalFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.CAPITAL);
+                letterFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.LETTERS);
+                imageFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.IMAGES);
             }
-            featureList = LabelManager.loadFeatures(formName + "_features.dat");
         }
 
-        if ((charDesc != null) || (charDesc.length()>0) || (pixelArrStr != null)) {
-            pixelArrStr = LabelManager.getClassID(selectedType,charDesc) + " " + pixelArrStr;
+        if (((charDesc != null) || (charDesc.length() > 0)) && (features != null)) {
+            int classId = LabelManager.getClassID(selectedType, charDesc);
 
+            // add classId id to the 1st column and store this data in ArrayList
             if (selectedType == LabelManager.LabelTypeEnum.DIGITS)
-                digits += pixelArrStr + "\n";
+                digitFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
             else if (selectedType == LabelManager.LabelTypeEnum.LETTERS)
-                letters += pixelArrStr + "\n";
+                letterFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
             else if (selectedType == LabelManager.LabelTypeEnum.CAPITAL)
-                capitals += pixelArrStr + "\n";
+                capitalFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
             else if (selectedType == LabelManager.LabelTypeEnum.IMAGES)
-                images += pixelArrStr + "\n";
+                imageFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
         }
         // paint next character and keep pixel info in pixelArrStr string
         showNext();
@@ -187,14 +190,14 @@ public class LearnLibrary extends Activity {
     public void save(View v) {
         // First initialize connection with Dropbox
         initDropbox();
-        Log.d(getClass().toString(),"Dropbox Inited");
+        Log.d(getClass().toString(), "Dropbox Inited");
 
         // Data&Time shall be in fileName;
         Date dateTime = Calendar.getInstance().getTime();
 
         // Files are saved with the following naming
-        String docType = "_"+docTypeEB.getText().toString();
-        String timeStr = "_"+sdf.format(dateTime);
+        String docType = "_" + docTypeEB.getText().toString();
+        String timeStr = "_" + sdf.format(dateTime);
 
         // Save all characted data
         writeFile("digits" + docType + timeStr + ".dat", digits);
@@ -203,7 +206,10 @@ public class LearnLibrary extends Activity {
         writeFile("images" + docType + timeStr + ".dat", images);
 
         // Save all features
-        LabelManager.saveFeatures(formName, featureList);
+        LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.DIGITS, digitFeatureList);
+        LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.LETTERS, letterFeatureList);
+        LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.CAPITAL, capitalFeatureList);
+        LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.IMAGES, imageFeatureList);
 
         // Classes with their IDs will be saved in corresponding files
         LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.DIGITS);
@@ -226,26 +232,26 @@ public class LearnLibrary extends Activity {
 
     // Show next element as a picture.
     private void showNext() {
-        Log.d(getClass().toString(),"next()");
+        Log.d(getClass().toString(), "next()");
         if ((symbolIt != null) && (symbolIt.hasNext())) {
             Symbol smb = (Symbol) symbolIt.next();
-            Log.i(getClass().toString(),"next.symbol :"+smb);
+            Log.i(getClass().toString(), "next.symbol :" + smb);
 
             // draw pixels
             int[][] pixels = smb.getPixels();
-            Log.i(getClass().toString(),"next.symbol.pixels :"+pixels.length);
+            Log.i(getClass().toString(), "next.symbol.pixels :" + pixels.length);
             int w = pixels.length;
             int h = pixels[0].length;
             int imgW = segmentView.getWidth();
             int imgH = segmentView.getHeight();
 
             // get half of it (keep another half for resize function)
-            int scale = Math.min(imgW / 2 * w, imgH / 2 * h);
+            int scale = Math.min(imgW / w, imgH / h) / 2;
             //int scale = Math.min(imgW / w, imgH / h);
-            Log.i(getClass().toString(),"next: w="+w+" h="+h+" imgW="+imgW+" imgH="+imgH+" scale="+scale);
+            Log.i(getClass().toString(), "next: w=" + w + " h=" + h + " imgW=" + imgW + " imgH=" + imgH + " scale=" + scale);
 
-            Bitmap bmp = Bitmap.createBitmap(w*scale, h*scale, Bitmap.Config.ARGB_8888);
-            Log.i(getClass().toString(),"next: Bitmap created");
+            Bitmap bmp = Bitmap.createBitmap(imgW, imgH, Bitmap.Config.ARGB_8888);
+            Log.i(getClass().toString(), "next: Bitmap created");
             bmp.eraseColor(Color.WHITE);
             Canvas canvas = new Canvas(bmp);
             Paint paint = new Paint();
@@ -255,27 +261,65 @@ public class LearnLibrary extends Activity {
 
             // This string will be written to a file.
             // Every line starts with a class type, followed with pixel size & values
-            pixelArrStr = w+" "+h;
+            //pixelArrStr = w+" "+h;
 
             // -------------------------------------------------
             for (int i = 0; i < w; i++) {
                 for (int j = 0; j < h; j++) {
-                    pixelArrStr += " "+pixels[i][j]; // pixel data is added (delimiter is ' ')
+                    //pixelArrStr += " "+pixels[i][j]; // pixel data is added (delimiter is ' ')
                     if (pixels[i][j] != 0)
                         canvas.drawRect(i * scale, j * scale, (i + 1) * scale, (j + 1) * scale, paint);
                 }
             }
 
-            // now draw home-made resized image
+            double dScale = 28.0 / Math.max(w, h);
+            int wscale, hscale;
+            if (w > h) {
+                wscale = 28;
+                hscale = (int) (h * dScale);
+            } else {
+                hscale = 28;
+                wscale = (int) (w * dScale);
+            }
+
+            // now draw home-made resized image centered in the box
+            //bilinear
             ImageTransform imtrans = new ImageTransform();
-            double[][] newImg = imtrans.resize(pixels, ImageTransform.InterpolationMode.BILINEAR, imgW / 2, imgH / 2);
+            double[][] resImg = imtrans.resize(pixels, ImageTransform.InterpolationMode.BILINEAR, wscale, hscale);
+            double[][] newImg = imtrans.fillMatrix(resImg, 28, 28);
+            // draw borders of the square
+            paint.setStyle(Paint.Style.STROKE);
+            canvas.drawRect(imgW / 2, imgH / 2, imgW / 2 + 28, imgH / 2 + 28, paint);
+            // fill pixel areas
+            //paint.setStyle(Paint.Style.FILL);
             for (int i = 0; i < newImg.length; i++) {
                 for (int j = 0; j < newImg[0].length; j++) {
                     if (newImg[i][j] != 0)
-                        canvas.drawRect(imgW / 2 + i, imgH / 2 + j, (i + 1), (j + 1), paint);
+                        canvas.drawPoint(imgW / 2 + i, imgH / 2 + j, paint);
                 }
             }
 
+            // bicubic
+            resImg = imtrans.resize(pixels, ImageTransform.InterpolationMode.BICUBIC, wscale, hscale);
+            newImg = imtrans.fillMatrix(resImg, 28, 28);
+            // draw borders of the square
+            paint.setStyle(Paint.Style.STROKE);
+            canvas.drawRect(0, imgH / 2, 28, imgH / 2 + 28, paint);
+            // fill pixel areas
+            //paint.setStyle(Paint.Style.FILL);
+            for (int i = 0; i < newImg.length; i++) {
+                for (int j = 0; j < newImg[0].length; j++) {
+                    if (newImg[i][j] != 0)
+                        canvas.drawPoint(i, imgH / 2 + j, paint);
+                }
+            }
+
+            // convert 2D array to 1D array
+            double[] new1Darr = MatrixOperations.oneDimensional(newImg);
+            // add image ratio (multiplied by 5) to the end of the array
+            features = MatrixOperations.addElement(new1Darr, (w * 5.0 / h));
+
+            // show symbol picture
             segmentView.setImageBitmap(bmp);
         }
     }
@@ -283,12 +327,11 @@ public class LearnLibrary extends Activity {
     // writes file to system location
     private void writeFile(String fileName, String content) {
         try {
-            FileWriter f = new FileWriter(Environment.getExternalStorageDirectory()+ File.separator + fileName);
+            FileWriter f = new FileWriter(Environment.getExternalStorageDirectory() + File.separator + fileName);
             f.write(content);
             f.close();
-        }
-        catch (Exception ex) {
-            Log.d(getClass().toString(),"writeFile : "+ex);
+        } catch (Exception ex) {
+            Log.d(getClass().toString(), "writeFile : " + ex);
         }
     }
 
@@ -301,30 +344,28 @@ public class LearnLibrary extends Activity {
             mDBApi.getSession().startOAuth2Authentication(LearnLibrary.this);
             Log.i(getClass().toString(), "Dropbox.init.5");
             bDropboxGranted = true;
-        }
-        catch (Exception ex) {
-            Log.e(getClass().toString(),"InitDropbox : "+ex);
+        } catch (Exception ex) {
+            Log.e(getClass().toString(), "InitDropbox : " + ex);
         }
     }
 
     // Uploads local file to Dropbox
     private void uploadToDropbox(String fileName) {
         try {
-            File file = new File(Environment.getExternalStorageDirectory()+ File.separator + fileName);
+            File file = new File(Environment.getExternalStorageDirectory() + File.separator + fileName);
             Log.i(getClass().toString(), "Dropbox.upload.1");
             FileInputStream inputStream = new FileInputStream(file);
 
             Log.i(getClass().toString(), "Dropbox.upload.2");
             DropboxAPI.Entry response = null;
-                    try {
-                        response = mDBApi.putFile("/Apps/Novruzoid/"+fileName, inputStream, fileName.length(), null, null);
-                    } catch (DropboxException e) {
-                        Log.i(getClass().toString(), "DropboxException: " + response.rev);
-                    }
-                    Log.i(getClass().toString(), "The uploaded file's rev is: " + response.rev);
-        }
-        catch (Exception ex) {
-            Log.e(getClass().toString(),"uploadToDropbox : "+ex);
+            try {
+                response = mDBApi.putFile("/Apps/Novruzoid/" + fileName, inputStream, fileName.length(), null, null);
+            } catch (DropboxException e) {
+                Log.i(getClass().toString(), "DropboxException: " + response.rev);
+            }
+            Log.i(getClass().toString(), "The uploaded file's rev is: " + response.rev);
+        } catch (Exception ex) {
+            Log.e(getClass().toString(), "uploadToDropbox : " + ex);
         }
     }
 

@@ -1,7 +1,6 @@
 package ocr.svm.libsvm;
 
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
+import ocr.LabelManager;
 
 /**
  * Created by itjamal on 7/24/2016.
@@ -102,45 +101,15 @@ public class SvmTrain {
         return svmProblem;
     }
 
+    public static void main(String[] args) {
+        SvmTrain letterSvm = new SvmTrain();
+        double[][] trainingSamples = LabelManager.loadFeaturesAsArray("SAFA", LabelManager.LabelTypeEnum.LETTERS);
 
-    /*
-    This method transforms the given image data to the standard size
-     */
-    public double[] getFeatures(Bitmap image) throws Exception {
-        double [] features;
-        final int IMAGE_WIDTH = 20; // width (also height) of the normalized image
-        final int RATIO_COEF = 5; // coefficient of the ratio feature
+        long l = System.currentTimeMillis();
+        System.out.println("Training started.");
+        svm_model letterSvmModel = letterSvm.train(trainingSamples);
 
-        int height = image.getWidth();
-        int width = image.getHeight();
-        double ratio = (double) width / height;
-
-        // resize image to 20x20 size
-        Matrix matrix = new Matrix();
-        matrix.postScale((float) width / IMAGE_WIDTH, (float) height / IMAGE_WIDTH);
-        Bitmap scaledBitmap = Bitmap.createBitmap(image, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
-
-        // get pixels of the resized image
-        int[] pixels = new int[IMAGE_WIDTH ^ 2];
-        scaledBitmap.getPixels(pixels, 0, IMAGE_WIDTH, 0, 0, IMAGE_WIDTH, IMAGE_WIDTH);
-
-
-        features = new double[pixels.length+1];
-
-        if (pixels.length != (IMAGE_WIDTH^2)) {
-            throw new Exception("NovruzoidError->Pixel data doesn't fit required size : "+IMAGE_WIDTH);
-        }
-
-        // I couldn't find better way to copy int[x] array to double[x+1] array
-        for (int i = 0; i < pixels.length; i++) {
-                features[i] = pixels[i];
-            }
-
-        // last element is the ratio
-        features[pixels.length] = RATIO_COEF*ratio;
-
-    return features;
+        System.out.println("Training finished. Duration : " + (int) ((System.currentTimeMillis() - l) / 100) + " seconds");
     }
-
 
 }

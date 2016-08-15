@@ -201,12 +201,12 @@ public class LabelManager {
         return symbol;
     }
 
-    // saves features in a file in comma delimited format
-    public static void saveFeatures(String formName, ArrayList<double[]> featuresList) {
+    // saves features in a file in a space delimited format
+    public static void saveFeatures(String formName, LabelTypeEnum symbolType, ArrayList<double[]> featuresList) {
         try {
             Iterator it = featuresList.iterator();
 
-            File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_features.dat");
+            File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_" + symbolType.toString() + "_features.dat");
             FileWriter fw = new FileWriter(file);
 
             while (it.hasNext()) {
@@ -226,11 +226,12 @@ public class LabelManager {
     }
 
     // loads features from a file and converts it to ArrayList
-    public static ArrayList<double[]> loadFeatures(String formName) {
+    // Used in application to manipulate the features
+    public static ArrayList<double[]> loadFeatures(String formName, LabelTypeEnum symbolType) {
         ArrayList<double[]> featuresList = new ArrayList<double[]>();
 
         try {
-            InputStream is = new FileInputStream(Environment.getExternalStorageDirectory() + File.separator + formName + "_features.dat");
+            InputStream is = new FileInputStream(Environment.getExternalStorageDirectory() + File.separator + formName + "_" + symbolType.toString() + "_features.dat");
             InputStreamReader isr = new InputStreamReader(is);
             BufferedReader br = new BufferedReader(isr);
             StringTokenizer tokenizer;
@@ -254,5 +255,44 @@ public class LabelManager {
         return featuresList;
     }
 
+
+    // loads features from a file and converts it to double[][] matrix
+    // Used in SvmTraining where double array is needed.
+    public static double[][] loadFeaturesAsArray(String formName, LabelTypeEnum symbolType) {
+        // first set maximum number of training examples as 10,000
+        // (it's costy to calculate the count of lines in a file before reading the data)
+        // when we have this number, we'll copy it to a new retVal array with correct length
+        double[][] features = new double[10000][];
+        double[][] retVal;
+        int lineCnt = 0;
+
+        try {
+            InputStream is = new FileInputStream(Environment.getExternalStorageDirectory() + File.separator + formName + "_" + symbolType.toString() + "_features.dat");
+            InputStreamReader isr = new InputStreamReader(is);
+            BufferedReader br = new BufferedReader(isr);
+            StringTokenizer tokenizer;
+            String line = "";
+
+            while ((line = br.readLine()) != null) {
+                tokenizer = new StringTokenizer(line, " ");
+
+                double[] record = new double[tokenizer.countTokens()];
+                int i = 0;
+                while (tokenizer.hasMoreTokens()) {
+                    record[i] = Double.parseDouble(tokenizer.nextToken());
+                }
+                features[lineCnt++] = record;
+            }
+            br.close();
+            isr.close();
+            is.close();
+        } catch (Exception ex) {
+            Log.e(CLASS_NAME, "laodFeatures() : " + ex);
+        }
+
+        retVal = new double[lineCnt][];
+        System.arraycopy(features, 0, retVal, 0, lineCnt);
+        return retVal;
+    }
 
 }

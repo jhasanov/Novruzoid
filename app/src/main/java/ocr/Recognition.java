@@ -93,7 +93,10 @@ public class Recognition {
                                 // recognize the symbol
 
                                 svm_node[] svmNodes = new svm_node[784];
-                                // TODO : convert 2D 28x28 array to 1D 784x1 array
+                                // TODO :
+                                // 1) resize image to 28x28 size
+                                // 2) convert 2D 28x28 array to 1D 784x1 array
+                                // 3) convert 1D array to svmNodes
                                 int [][] pixels = symbol.getPixels();
                                 double classId = svm.svm_predict(model, svmNodes);
                                 // get label name by ID

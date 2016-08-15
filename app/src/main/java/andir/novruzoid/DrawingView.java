@@ -51,9 +51,9 @@ public class DrawingView extends View {//} implements View.OnTouchListener {
         points = imgProc.getEdges();
 
         mPaint = new Paint();
-        mSegment = new Paint();
         mPaint.setColor(Color.GREEN);
         mPaint.setStyle(Paint.Style.STROKE);
+        mSegment = new Paint();
         mBitmapPaint = new Paint();
 
         setOnTouchListener(new View.OnTouchListener() {
