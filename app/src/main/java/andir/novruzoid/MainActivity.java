@@ -267,9 +267,9 @@ public class MainActivity extends Activity {
         // Perform recognition here.
         Recognition recognize = new Recognition();
         if (!LabelManager.isbInitialized()) {
-            LabelManager.loadHashes("SAFA");
+            LabelManager.loadHashes("JML");
         }
-        String [] textResult = recognize.recognize(Recognition.RecognitionModel.SVM,columnsMap);
+        String[] textResult = recognize.recognize(Recognition.RecognitionModel.SVM, "JML", columnsMap);
 
         Log.i(APP_NAME,"Recognitze. Columns : "+textResult.length);
         for (String column: textResult) {

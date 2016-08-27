@@ -39,9 +39,9 @@ public class LabelManager {
         NONE, DIGITS, LETTERS, CAPITAL, IMAGES,
     }
 
-    static {
-        Log.i(CLASS_NAME, "Static{} called");
-    }
+    //static {
+    //    Log.i(CLASS_NAME, "Static{} called");
+    //}
 
     public static boolean isbInitialized() {
         return bInitialized;
@@ -74,13 +74,13 @@ public class LabelManager {
         String filePrefix = "";
 
         if (symbolType == LabelTypeEnum.DIGITS) {
-            filePrefix = "digits";
+            filePrefix = "digits_dict";
         } else if (symbolType == LabelTypeEnum.LETTERS) {
-            filePrefix = "letters";
+            filePrefix = "letters_dict";
         } else if (symbolType == LabelTypeEnum.CAPITAL) {
-            filePrefix = "capital";
+            filePrefix = "capital_dict";
         } else if (symbolType == LabelTypeEnum.IMAGES) {
-            filePrefix = "images";
+            filePrefix = "images_dict";
         }
 
         try {
@@ -242,7 +242,7 @@ public class LabelManager {
                 double[] record = new double[tokenizer.countTokens()];
                 int i = 0;
                 while (tokenizer.hasMoreTokens()) {
-                    record[i] = Double.parseDouble(tokenizer.nextToken());
+                    record[i++] = Double.parseDouble(tokenizer.nextToken());
                 }
                 featuresList.add(record);
             }
@@ -258,7 +258,7 @@ public class LabelManager {
 
     // loads features from a file and converts it to double[][] matrix
     // Used in SvmTraining where double array is needed.
-    public static double[][] loadFeaturesAsArray(String formName, LabelTypeEnum symbolType) {
+    public static double[][] loadFeaturesAsArray(String formName, String folder, LabelTypeEnum symbolType) {
         // first set maximum number of training examples as 10,000
         // (it's costy to calculate the count of lines in a file before reading the data)
         // when we have this number, we'll copy it to a new retVal array with correct length
@@ -267,7 +267,10 @@ public class LabelManager {
         int lineCnt = 0;
 
         try {
-            InputStream is = new FileInputStream(Environment.getExternalStorageDirectory() + File.separator + formName + "_" + symbolType.toString() + "_features.dat");
+            String dirPath = folder;
+            if ((folder == null) || (folder.length() == 0))
+                dirPath = Environment.getExternalStorageDirectory().getPath();
+            InputStream is = new FileInputStream(dirPath + File.separator + formName + "_" + symbolType.toString() + "_features.dat");
             InputStreamReader isr = new InputStreamReader(is);
             BufferedReader br = new BufferedReader(isr);
             StringTokenizer tokenizer;
@@ -279,7 +282,7 @@ public class LabelManager {
                 double[] record = new double[tokenizer.countTokens()];
                 int i = 0;
                 while (tokenizer.hasMoreTokens()) {
-                    record[i] = Double.parseDouble(tokenizer.nextToken());
+                    record[i++] = Double.parseDouble(tokenizer.nextToken());
                 }
                 features[lineCnt++] = record;
             }

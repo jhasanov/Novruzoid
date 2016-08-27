@@ -4,56 +4,64 @@ import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeMap;
 
+import image.ImageTransform;
 import image.segment.elements.Column;
 import image.segment.elements.Symbol;
 import image.segment.elements.TextLine;
 import image.segment.elements.Word;
+import ocr.svm.libsvm.SvmHelper;
 import ocr.svm.libsvm.svm;
 import ocr.svm.libsvm.svm_model;
 import ocr.svm.libsvm.svm_node;
+import utils.MatrixOperations;
 
 /**
  * Created by itjamal on 7/12/2016.
  */
 public class Recognition {
 
+    HashMap<LabelManager.LabelTypeEnum, svm_model> svmModels = new HashMap<LabelManager.LabelTypeEnum, svm_model>();
+
     public enum RecognitionModel {
         NeuralNet, SVM,
     }
 
     public void init() {
-        LabelManager.loadHashes("SAFA");
+        LabelManager.loadHashes("JML");
     }
 
-    public svm_model loadModel(RecognitionModel recModel) {
+    public void loadModels(RecognitionModel recModel, String formName) {
         svm_model model = null;
 
         // load SVM model
         String modelFile = "";
         try {
             if (recModel == RecognitionModel.SVM) {
-                modelFile = Environment.getExternalStorageDirectory() + File.separator + "SAFA_letters_model.txt";
+                modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_CAPITAL_model";
+                model = svm.svm_load_model(modelFile);
+                svmModels.put(LabelManager.LabelTypeEnum.CAPITAL, model);
+                modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_DIGITS_model";
+                model = svm.svm_load_model(modelFile);
+                svmModels.put(LabelManager.LabelTypeEnum.DIGITS, model);
             }
-            svm_model svmLettersModel = svm.svm_load_model(modelFile);
         } catch (Exception ex) {
             Log.e(getClass().toString(), "loadModel: " + ex);
         }
-
-        return model;
     }
 
     // Go through lines and recognize every symbol in words.
     // Function returns array of String - each index corresponds to the column
-    public String[] recognize(RecognitionModel recModel, TreeMap<Integer, Column> columnsMap) {
+    public String[] recognize(RecognitionModel recModel, String formName, TreeMap<Integer, Column> columnsMap) {
         String[] resultText = new String[0];
         int colIdx = 0;
 
 
         try {
-            svm_model model = loadModel(recModel);
+            loadModels(recModel, formName);
             // check if segmentation info is not empty
             if ((columnsMap != null) || (columnsMap.size() > 0)) {
                 resultText = new String[columnsMap.size()];
@@ -90,17 +98,30 @@ public class Recognition {
                             while (smbIt.hasNext()) {
                                 Integer smbKey = smbIt.next();
                                 Symbol symbol = symbolsMap.get(smbKey);
-                                // recognize the symbol
 
-                                svm_node[] svmNodes = new svm_node[784];
-                                // TODO :
+                                // Recognize the symbol
+
                                 // 1) resize image to 28x28 size
                                 // 2) convert 2D 28x28 array to 1D 784x1 array
+                                // 3) add 1 "ratio" feature
                                 // 3) convert 1D array to svmNodes
                                 int [][] pixels = symbol.getPixels();
-                                double classId = svm.svm_predict(model, svmNodes);
+
+                                // Get features from the pixel array
+                                ImageTransform imtrans = new ImageTransform();
+                                double[][] newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BICUBIC, 28);
+                                // convert 2D array (of BILINEAR scaling result) to 1D array
+                                double[] new1Darr = MatrixOperations.oneDimensional(newImg);
+                                // add image ratio (multiplied by 5) to the end of the array
+                                int w = pixels.length;
+                                int h = pixels[0].length;
+                                double[] features = MatrixOperations.addElement(new1Darr, (w * 5.0 / h));
+
+                                svm_node[] svmNodes = SvmHelper.featuresToSvmNodes(features);
+                                // Recognize in CAPITAL LETTERS DB
+                                double classId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
                                 // get label name by ID
-                                resultText[colIdx] += LabelManager.getSymbol(LabelManager.LabelTypeEnum.LETTERS,(int)classId);
+                                resultText[colIdx] += LabelManager.getSymbol(LabelManager.LabelTypeEnum.CAPITAL, (int) classId);
                             }
                             // word is finished, add space before the next word.
                             resultText[colIdx] += " ";

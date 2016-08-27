@@ -1,6 +1,13 @@
 package ocr.svm.libsvm;
-import java.io.*;
-import java.util.*;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Random;
+import java.util.StringTokenizer;
 
 //
 // Kernel Cache
@@ -126,7 +133,7 @@ abstract class QMatrix {
 	abstract float[] get_Q(int column, int len);
 	abstract double[] get_QD();
 	abstract void swap_index(int i, int j);
-};
+}
 
 abstract class Kernel extends QMatrix {
 	private svm_node[][] x;
@@ -185,13 +192,13 @@ abstract class Kernel extends QMatrix {
 		this.gamma = param.gamma;
 		this.coef0 = param.coef0;
 
-		x = (svm_node[][])x_.clone();
+		x = x_.clone();
 
 		if(kernel_type == svm_parameter.RBF)
 		{
 			x_square = new double[l];
 			for(int i=0;i<l;i++)
-				x_square[i] = dot(x[i],x[i]);
+				x_square[i] = dot(x[i], x[i]);
 		}
 		else x_square = null;
 	}
@@ -205,11 +212,10 @@ abstract class Kernel extends QMatrix {
 		int j = 0;
 		while(i < xlen && j < ylen)
 		{
-			if(x[i].index == y[j].index)
+			if (x[i].index == y[j].index)
 				sum += x[i++].value * y[j++].value;
-			else
-			{
-				if(x[i].index > y[j].index)
+			else {
+				if (x[i].index > y[j].index)
 					++j;
 				else
 					++i;
@@ -402,9 +408,9 @@ class Solver {
 		this.l = l;
 		this.Q = Q;
 		QD = Q.get_QD();
-		p = (double[])p_.clone();
-		y = (byte[])y_.clone();
-		alpha = (double[])alpha_.clone();
+		p = p_.clone();
+		y = y_.clone();
+		alpha = alpha_.clone();
 		this.Cp = Cp;
 		this.Cn = Cn;
 		this.eps = eps;
@@ -1149,7 +1155,7 @@ class SVC_Q extends Kernel
 	SVC_Q(svm_problem prob, svm_parameter param, byte[] y_)
 	{
 		super(prob.l, prob.x, param);
-		y = (byte[])y_.clone();
+		y = y_.clone();
 		cache = new Cache(prob.l,(long)(param.cache_size*(1<<20)));
 		QD = new double[prob.l];
 		for(int i=0;i<prob.l;i++)
@@ -1490,8 +1496,8 @@ public class svm {
 	static class decision_function
 	{
 		double[] alpha;
-		double rho;	
-	};
+		double rho;
+	}
 
 	static decision_function svm_train_one(
 		svm_problem prob, svm_parameter param,

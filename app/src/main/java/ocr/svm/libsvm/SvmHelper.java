@@ -1,11 +1,13 @@
 package ocr.svm.libsvm;
 
+import java.io.IOException;
+
 import ocr.LabelManager;
 
 /**
  * Created by itjamal on 7/24/2016.
  */
-public class SvmTrain {
+public class SvmHelper {
 
 
     // trains and return SVM model
@@ -85,31 +87,68 @@ public class SvmTrain {
         svmProblem.l = sampleCnt;
 
         // First column are Y values
-        svmProblem.y = dataArr[0];
+        svmProblem.y = new double[dataArr.length];
+
+        for (int i = 0; i < dataArr.length; i++)
+            svmProblem.y[i] = dataArr[i][0];
+
 
         // Setting X values
-        svm_node[][] features = new svm_node[sampleCnt][];
+        svm_node[][] features = new svm_node[sampleCnt][featureCnt];
+        System.out.println("Sample count: " + sampleCnt + ", Feature count: " + featureCnt);
         for (int i = 0; i < sampleCnt; i++) {
-            for (int j = 1; i <= featureCnt; j++) { // "<=" sign is used to consider the last element (featureCnt is length-1)
-                features[i][j - 1] = new svm_node();
-                features[i][j - 1].index = j; // index of svm_node starts with 1, not 0.
-                features[i][j - 1].value = dataArr[i][j];
+            int featIdx = 0;
+
+            for (int j = 1; j <= featureCnt; j++) { // "<=" sign is used to consider the last element (featureCnt is length-1)
+                features[i][featIdx] = new svm_node();
+                features[i][featIdx].index = j; // index of svm_node starts with 1, not 0.
+                features[i][featIdx].value = dataArr[i][j - 1];
+                featIdx++;
             }
+            /*
+            features[i][featIdx] = new svm_node();
+            features[i][featIdx].index = -1; // the end of features.
+            features[i][featIdx].value = 0;
+            */
         }
         svmProblem.x = features;
 
         return svmProblem;
     }
 
+    // Converts features (for the recognition, without given Y value) to a SVM_PROBLEM format
+    public static svm_node[] featuresToSvmNodes(double[] features) {
+        svm_problem svmProblem = new svm_problem();
+
+        int featureCnt = features.length; // there's no Y in the 1st column
+
+        svm_node[] nodes = new svm_node[featureCnt];
+
+        int featIdx = 0;
+
+        for (int i = 0; i < featureCnt; i++) {
+            nodes[i] = new svm_node();
+            nodes[i].index = i + 1; // index of svm_node starts with 1, not 0.
+            nodes[i].value = features[i];
+        }
+
+        return nodes;
+    }
+
     public static void main(String[] args) {
-        SvmTrain letterSvm = new SvmTrain();
-        double[][] trainingSamples = LabelManager.loadFeaturesAsArray("SAFA", LabelManager.LabelTypeEnum.LETTERS);
+        SvmHelper capitalSvm = new SvmHelper();
+        double[][] trainingSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP", LabelManager.LabelTypeEnum.DIGITS);
 
         long l = System.currentTimeMillis();
-        System.out.println("Training started.");
-        svm_model letterSvmModel = letterSvm.train(trainingSamples);
+        System.out.println("Training started. Elements: " + trainingSamples.length + ", features: " + trainingSamples[0].length);
+        svm_model capitalSvmModel = capitalSvm.train(trainingSamples);
+        try {
+            svm.svm_save_model("D:\\Dropbox\\TEMP\\JML_DIGITS_model", capitalSvmModel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        System.out.println("Training finished. Duration : " + (int) ((System.currentTimeMillis() - l) / 100) + " seconds");
+        System.out.println("Training finished. Duration : " + (int) ((System.currentTimeMillis() - l) / 1000) + " seconds");
     }
 
 }

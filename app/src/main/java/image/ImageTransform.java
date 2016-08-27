@@ -46,6 +46,26 @@ public class ImageTransform {
         return resizedMatrix;
     }
 
+    public double[][] resizeAndFill(int[][] pixels, InterpolationMode inMode, int newWidth) {
+        int w = pixels.length;
+        int h = pixels[0].length;
+
+        double dScale = newWidth / Math.max(w, h);
+        int wscale, hscale;
+        if (w > h) {
+            wscale = newWidth;
+            hscale = (int) (h * dScale);
+        } else {
+            hscale = newWidth;
+            wscale = (int) (w * dScale);
+        }
+
+        ImageTransform imtrans = new ImageTransform();
+        double[][] resImg = imtrans.resize(pixels, inMode, wscale, hscale);
+        double[][] newImg = imtrans.fillMatrix(resImg, newWidth, newWidth);
+
+        return newImg;
+    }
 
     // this helper function returns an interpolation between two A and B points for parameter t in [0,1]
     public double lerp(double A, double B, double t) {
@@ -146,9 +166,9 @@ public class ImageTransform {
         double col2 = cubicHermite(p02, p12, p22, p32, xfract);
         double col3 = cubicHermite(p03, p13, p23, p33, xfract);
         double value = cubicHermite(col0, col1, col2, col3, yfract);
-        clamp(value, 0.0, 255.0);
 
-        return value;
+        double retval = clamp(value, 0.0, 255.0);
+        return Math.round(retval);
     }
 
     public static void main(String[] args) {

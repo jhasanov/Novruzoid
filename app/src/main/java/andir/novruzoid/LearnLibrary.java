@@ -22,7 +22,6 @@ import com.dropbox.client2.session.AppKeyPair;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -45,7 +44,6 @@ public class LearnLibrary extends Activity {
     //private ArrayList<Symbol> symbolList;
     private Iterator symbolIt;
     // Variables to save class parameters
-    private String digits, letters, capitals, images;
     private SimpleDateFormat sdf = new SimpleDateFormat("ddMMyy-HHmmss");
     private boolean bMapsLoaded;
     private String formName = "";
@@ -141,7 +139,7 @@ public class LearnLibrary extends Activity {
             Log.e(getClass().toString(), "init() 1");
             symbolIt = LabelManager.symbolList.iterator();
             Log.e(getClass().toString(), "init() : " + symbolIt);
-            showNext();
+            //showNext();
             Log.e(getClass().toString(), "init() 3");
         } catch (Exception ex) {
             Log.e(getClass().toString(), "problem in init(): " + ex);
@@ -169,7 +167,7 @@ public class LearnLibrary extends Activity {
             }
         }
 
-        if (((charDesc != null) || (charDesc.length() > 0)) && (features != null)) {
+        if (((charDesc != null) || (charDesc.length() > 0)) && ((features != null) && (features.length > 0))) {
             int classId = LabelManager.getClassID(selectedType, charDesc);
 
             // add classId id to the 1st column and store this data in ArrayList
@@ -199,12 +197,6 @@ public class LearnLibrary extends Activity {
         String docType = "_" + docTypeEB.getText().toString();
         String timeStr = "_" + sdf.format(dateTime);
 
-        // Save all characted data
-        writeFile("digits" + docType + timeStr + ".dat", digits);
-        writeFile("letters" + docType + timeStr + ".dat", letters);
-        writeFile("capitals" + docType + timeStr + ".dat", capitals);
-        writeFile("images" + docType + timeStr + ".dat", images);
-
         // Save all features
         LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.DIGITS, digitFeatureList);
         LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.LETTERS, letterFeatureList);
@@ -222,10 +214,8 @@ public class LearnLibrary extends Activity {
         uploadToDropbox(formName + "_letters_dict" + ".dat");
         uploadToDropbox(formName + "_capitals_dict" + ".dat");
         uploadToDropbox(formName + "_images_dict" + ".dat");
-        uploadToDropbox("digits" + docType + timeStr + ".dat");
-        uploadToDropbox("letters" + docType + timeStr + ".dat");
-        uploadToDropbox("capitals" + docType + timeStr + ".dat");
-        uploadToDropbox("images" + docType + timeStr + ".dat");
+
+        // TODO: upload feature files to Dropbox as well
 
         setResult(RESULT_OK);
     }
@@ -259,49 +249,17 @@ public class LearnLibrary extends Activity {
             paint.setAntiAlias(false);
             paint.setStyle(Paint.Style.FILL);
 
-            // This string will be written to a file.
-            // Every line starts with a class type, followed with pixel size & values
-            //pixelArrStr = w+" "+h;
-
-            // -------------------------------------------------
             for (int i = 0; i < w; i++) {
                 for (int j = 0; j < h; j++) {
-                    //pixelArrStr += " "+pixels[i][j]; // pixel data is added (delimiter is ' ')
                     if (pixels[i][j] != 0)
                         canvas.drawRect(i * scale, j * scale, (i + 1) * scale, (j + 1) * scale, paint);
                 }
             }
 
-            double dScale = 28.0 / Math.max(w, h);
-            int wscale, hscale;
-            if (w > h) {
-                wscale = 28;
-                hscale = (int) (h * dScale);
-            } else {
-                hscale = 28;
-                wscale = (int) (w * dScale);
-            }
-
             // now draw home-made resized image centered in the box
-            //bilinear
-            ImageTransform imtrans = new ImageTransform();
-            double[][] resImg = imtrans.resize(pixels, ImageTransform.InterpolationMode.BILINEAR, wscale, hscale);
-            double[][] newImg = imtrans.fillMatrix(resImg, 28, 28);
-            // draw borders of the square
-            paint.setStyle(Paint.Style.STROKE);
-            canvas.drawRect(imgW / 2, imgH / 2, imgW / 2 + 28, imgH / 2 + 28, paint);
-            // fill pixel areas
-            //paint.setStyle(Paint.Style.FILL);
-            for (int i = 0; i < newImg.length; i++) {
-                for (int j = 0; j < newImg[0].length; j++) {
-                    if (newImg[i][j] != 0)
-                        canvas.drawPoint(imgW / 2 + i, imgH / 2 + j, paint);
-                }
-            }
-
             // bicubic
-            resImg = imtrans.resize(pixels, ImageTransform.InterpolationMode.BICUBIC, wscale, hscale);
-            newImg = imtrans.fillMatrix(resImg, 28, 28);
+            ImageTransform imtrans = new ImageTransform();
+            double[][] newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BICUBIC, 28);
             // draw borders of the square
             paint.setStyle(Paint.Style.STROKE);
             canvas.drawRect(0, imgH / 2, 28, imgH / 2 + 28, paint);
@@ -314,24 +272,27 @@ public class LearnLibrary extends Activity {
                 }
             }
 
-            // convert 2D array to 1D array
+            //bilinear
+            newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BILINEAR, 28);
+            // draw borders of the square
+            paint.setStyle(Paint.Style.STROKE);
+            canvas.drawRect(imgW / 2, imgH / 2, imgW / 2 + 28, imgH / 2 + 28, paint);
+            // fill pixel areas
+            //paint.setStyle(Paint.Style.FILL);
+            for (int i = 0; i < newImg.length; i++) {
+                for (int j = 0; j < newImg[0].length; j++) {
+                    if (newImg[i][j] != 0)
+                        canvas.drawPoint(imgW / 2 + i, imgH / 2 + j, paint);
+                }
+            }
+
+            // convert 2D array (of BILINEAR scaling result) to 1D array
             double[] new1Darr = MatrixOperations.oneDimensional(newImg);
             // add image ratio (multiplied by 5) to the end of the array
             features = MatrixOperations.addElement(new1Darr, (w * 5.0 / h));
 
             // show symbol picture
             segmentView.setImageBitmap(bmp);
-        }
-    }
-
-    // writes file to system location
-    private void writeFile(String fileName, String content) {
-        try {
-            FileWriter f = new FileWriter(Environment.getExternalStorageDirectory() + File.separator + fileName);
-            f.write(content);
-            f.close();
-        } catch (Exception ex) {
-            Log.d(getClass().toString(), "writeFile : " + ex);
         }
     }
 
