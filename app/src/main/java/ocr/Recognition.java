@@ -4,6 +4,7 @@ import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeMap;
@@ -61,6 +62,9 @@ public class Recognition {
 
 
         try {
+            File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_recognition.dat");
+            FileWriter fw = new FileWriter(file);
+
             loadModels(recModel, formName);
             // check if segmentation info is not empty
             if ((columnsMap != null) || (columnsMap.size() > 0)) {
@@ -117,6 +121,10 @@ public class Recognition {
                                 int h = pixels[0].length;
                                 double[] features = MatrixOperations.addElement(new1Darr, (w * 5.0 / h));
 
+                                for (double feat : features)
+                                    fw.write(feat + " ");
+                                fw.write("\n");
+
                                 svm_node[] svmNodes = SvmHelper.featuresToSvmNodes(features);
                                 // Recognize in CAPITAL LETTERS DB
                                 double classId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
@@ -128,12 +136,13 @@ public class Recognition {
 
                         }
                         // line is ended, new line.
-                        resultText[colIdx] += "/n";
+                        resultText[colIdx] += "\n";
                     }
                     colIdx++;
                 }
 
             }
+            fw.close();
 
         } catch (Exception ex) {
             Log.e(getClass().toString(), "recognize(): " + ex);

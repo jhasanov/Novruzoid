@@ -1,6 +1,7 @@
 package ocr.svm.libsvm;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import ocr.LabelManager;
 
@@ -20,14 +21,103 @@ public class SvmHelper {
         // Set parameters of the SVM with RBF kernel
         svm_parameter params = new svm_parameter();
         params.svm_type = svm_parameter.C_SVC;
-        params.kernel_type = svm_parameter.RBF;
-        params.gamma = 0.23;
-        params.C = 14;
+        params.kernel_type = svm_parameter.POLY;
+        params.gamma = 20;
+        params.C = 0.125;
+        params.degree = 2;
+        params.coef0 = 0.00003;
         params.eps = 0.0001;
 
         svmModel = svm.svm_train(svmProblem, params);
 
         return svmModel;
+    }
+
+    // tries different oiptions and chooses best SVM model
+    public svm_model CrossValidateTrain(double[][] trainData) {
+        svm_model svmModel = null;
+        double bestAccuracy = 0.0;
+        String bestParams = "";
+
+        // Get training data in LibSVM format
+        svm_problem svmProblem = arrToSvmProblem(trainData);
+
+        double[] target = new double[svmProblem.l];
+
+        int[] svmTypeArr = {svm_parameter.POLY, svm_parameter.RBF};
+        double[] CArr = {8, 32, 128};
+        double[] gammaArr = {0.001, 0.01, 0.1, 1, 10};
+        int[] degreeArr = {2, 3, 4};
+        double[] coef0Arr = {-5, 2, 8, 20};
+
+        svm_parameter params = new svm_parameter();
+        params.svm_type = svm_parameter.C_SVC;
+        params.eps = 0.0001;
+
+
+        // try polynomial: (gamma*u'*v + coef0)^degree
+        params.kernel_type = svm_parameter.POLY;
+        for (double C : CArr) {
+            for (double gamma : gammaArr) {
+                for (double coef0 : coef0Arr) {
+                    for (int degree : degreeArr) {
+                        params.coef0 = coef0;
+                        params.gamma = gamma;
+                        params.C = C;
+                        params.degree = degree;
+
+                        svm.svm_cross_validation(svmProblem, params, 5, target);
+
+
+                        double accuracy = calcAccuracy(target, svmProblem.y);
+                        String paramStr = "Cross validation: C=" + C + "; gamma=" + gamma + "; coeg0=" + coef0 + "; degree=" + degree;
+                        if (accuracy > bestAccuracy) {
+                            bestAccuracy = accuracy;
+                            bestParams = paramStr;
+                        }
+                        System.out.println(paramStr + ". Result: " + accuracy * 100 + "%" + "; Best accuracy: " + bestAccuracy * 100 + "%");
+                    }
+                }
+
+            }
+        }
+
+
+        // TODO: try RBF: exp(-gamma*|u-v|^2)
+/*        params.kernel_type = svm_parameter.RBF;
+        for (double C : CArr) {
+            for (double gamma : gammaArr) {
+                params.gamma = gamma;
+                params.C = C;
+
+                svm.svm_cross_validation(svmProblem, params, 2, target);
+
+
+                double accuracy = calcAccuracy(target, svmProblem.y);
+                String paramStr = "Cross validation: C=" + C + "; gamma=" + gamma;
+                if (accuracy > bestAccuracy) {
+                    bestAccuracy = accuracy;
+                    bestParams = paramStr;
+                }
+                System.out.println(paramStr + ". Result: " + accuracy * 100 + "%" + "; Best accuracy: " + bestAccuracy * 100 + "%");
+            }
+        }
+*/
+        System.out.println("Best accuracy: " + bestAccuracy * 100 + "%. Params:" + bestParams);
+        return svmModel;
+    }
+
+
+    // Calculates the result of accuracy
+    double calcAccuracy(double[] result, double[] desired) {
+        int correct = 0;
+
+        for (int i = 0; i < result.length; i++) {
+            if (result[i] == desired[i])
+                correct++;
+        }
+
+        return correct * 1.0 / result.length;
     }
 
     /*
@@ -137,18 +227,50 @@ public class SvmHelper {
 
     public static void main(String[] args) {
         SvmHelper capitalSvm = new SvmHelper();
-        double[][] trainingSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP", LabelManager.LabelTypeEnum.DIGITS);
 
-        long l = System.currentTimeMillis();
-        System.out.println("Training started. Elements: " + trainingSamples.length + ", features: " + trainingSamples[0].length);
-        svm_model capitalSvmModel = capitalSvm.train(trainingSamples);
-        try {
-            svm.svm_save_model("D:\\Dropbox\\TEMP\\JML_DIGITS_model", capitalSvmModel);
-        } catch (IOException e) {
-            e.printStackTrace();
+        System.out.println("arg[0] is: " + args[0] + "\n");
+
+
+        if ((args.length < 1) || (args[0] == null)) {
+            System.out.println("Please pass a 'train'/'test' parameter. \n");
+        } else if (args[0].equals("train")) {
+            double[][] trainingSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP", LabelManager.LabelTypeEnum.CAPITAL);
+
+            long l = System.currentTimeMillis();
+            System.out.println("Training started. Elements: " + trainingSamples.length + ", features: " + trainingSamples[0].length);
+            svm_model capitalSvmModel = capitalSvm.train(trainingSamples);
+            //svm_model capitalSvmModel = capitalSvm.CrossValidateTrain(trainingSamples);
+            try {
+                svm.svm_save_model("D:\\Dropbox\\TEMP\\JML_CAPITAL_model", capitalSvmModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("Training finished. Duration : " + (int) ((System.currentTimeMillis() - l) / 1000) + " seconds");
+        } else if (args[0].equals("test")) {
+            System.out.println("Performing test...\n");
+
+            String modelFile = "D:\\Dropbox\\TEMP\\JML_CAPITAL_model";
+            double[][] trainingSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP", LabelManager.LabelTypeEnum.CAPITAL);
+            int positives = 0;
+            int samples = trainingSamples.length;
+            int featlen = trainingSamples[0].length;
+
+            try {
+                svm_model model = svm.svm_load_model(modelFile);
+                for (double[] features : trainingSamples) {
+                    double desiredClass = features[0];
+                    svm_node[] nodes = featuresToSvmNodes(Arrays.copyOfRange(features, 1, featlen));
+                    double classId = svm.svm_predict(model, nodes);
+                    if (desiredClass == classId) {
+                        positives++;
+                    }
+                }
+                System.out.println("Test result: " + (positives * 100 / samples) + "% (" + positives + "/" + samples + ")");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
-
-        System.out.println("Training finished. Duration : " + (int) ((System.currentTimeMillis() - l) / 1000) + " seconds");
     }
 
 }

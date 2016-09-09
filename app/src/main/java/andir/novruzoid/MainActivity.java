@@ -271,10 +271,11 @@ public class MainActivity extends Activity {
         }
         String[] textResult = recognize.recognize(Recognition.RecognitionModel.SVM, "JML", columnsMap);
 
-        Log.i(APP_NAME,"Recognitze. Columns : "+textResult.length);
-        for (String column: textResult) {
-            // print recognition results
-        }
+        Log.i(APP_NAME, "Recognize. Result: " + textResult[0]);
+
+        Intent resultIntent = new Intent(getApplicationContext(), ResultActivity.class);
+        resultIntent.putExtra("TEXT_RESULT", textResult[0]);
+        startActivity(resultIntent);
 
         /*
         String receiptDataJSON = "{ " +
