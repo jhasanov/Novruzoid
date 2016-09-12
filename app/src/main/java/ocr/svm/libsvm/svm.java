@@ -2355,8 +2355,9 @@ public class svm {
 				start[i] = start[i-1]+model.nSV[i-1];
 
 			int[] vote = new int[nr_class];
-			for(i=0;i<nr_class;i++)
-				vote[i] = 0;
+			// JAMAL commented this: Int arrays initiated with 0 value. No need to do this.
+			//for(i=0;i<nr_class;i++)
+			//	vote[i] = 0;
 
 			int p=0;
 			for(i=0;i<nr_class;i++)
