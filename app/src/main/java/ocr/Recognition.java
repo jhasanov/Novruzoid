@@ -42,7 +42,16 @@ public class Recognition {
             if (recModel == RecognitionModel.SVM) {
                 modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_CAPITAL_model";
                 svm_model capitalModel = SvmHelper.loadFromMatlabFile(modelFile);
+
+                modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_DIGITS_model";
+                svm_model digitsModel = SvmHelper.loadFromMatlabFile(modelFile);
+
+                modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_LETTERS_model";
+                svm_model lettersModel = SvmHelper.loadFromMatlabFile(modelFile);
+
                 svmModels.put(LabelManager.LabelTypeEnum.CAPITAL, capitalModel);
+                svmModels.put(LabelManager.LabelTypeEnum.DIGITS, digitsModel);
+                svmModels.put(LabelManager.LabelTypeEnum.LETTERS, lettersModel);
             }
         } catch (Exception ex) {
             Log.e(getClass().toString(), "loadModel: " + ex);
@@ -123,10 +132,30 @@ public class Recognition {
                                     fw.write("\n");
 
                                     svm_node[] svmNodes = SvmHelper.featuresToSvmNodes(features);
-                                    // Recognize in CAPITAL LETTERS DB
-                                    double classId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
-                                    // get label name by ID
-                                    resultText[colIdx] += LabelManager.getSymbol(LabelManager.LabelTypeEnum.CAPITAL, (int) classId);
+
+                                    LabelManager.LabelTypeEnum winnerType = LabelManager.LabelTypeEnum.CAPITAL;
+                                    double winnerClassId;
+
+                                    // Recognize in CAPITAL LETTERS DB and set it's probability as winner (default)
+                                    winnerClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
+
+                                    // Recognize in DIGITS DB
+                                    double digitsClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.DIGITS), svmNodes);
+                                    if (digitsClassId > winnerClassId) {
+                                        winnerType = LabelManager.LabelTypeEnum.DIGITS;
+                                        winnerClassId = digitsClassId;
+                                    }
+
+                                    // Recognize in LETTERS
+                                    double lettersClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.LETTERS), svmNodes);
+                                    if (lettersClassId > winnerClassId) {
+                                        winnerType = LabelManager.LabelTypeEnum.LETTERS;
+                                        winnerClassId = lettersClassId;
+                                    }
+
+
+                                    // get label name by ID from the highest probability model
+                                    resultText[colIdx] += LabelManager.getSymbol(winnerType, (int) winnerClassId);
                                 } catch (Exception ex) {
                                     Log.e(getClass().toString(), "recognize(): " + ex.toString());
                                 }
