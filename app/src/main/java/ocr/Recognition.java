@@ -36,18 +36,13 @@ public class Recognition {
     }
 
     public void loadModels(RecognitionModel recModel, String formName) {
-        svm_model model = null;
-
         // load SVM model
         String modelFile = "";
         try {
             if (recModel == RecognitionModel.SVM) {
                 modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_CAPITAL_model";
-                model = svm.svm_load_model(modelFile);
-                svmModels.put(LabelManager.LabelTypeEnum.CAPITAL, model);
-                modelFile = Environment.getExternalStorageDirectory() + File.separator + formName + "_DIGITS_model";
-                model = svm.svm_load_model(modelFile);
-                svmModels.put(LabelManager.LabelTypeEnum.DIGITS, model);
+                svm_model capitalModel = SvmHelper.loadFromMatlabFile(modelFile);
+                svmModels.put(LabelManager.LabelTypeEnum.CAPITAL, capitalModel);
             }
         } catch (Exception ex) {
             Log.e(getClass().toString(), "loadModel: " + ex);
@@ -59,7 +54,6 @@ public class Recognition {
     public String[] recognize(RecognitionModel recModel, String formName, TreeMap<Integer, Column> columnsMap) {
         String[] resultText = new String[0];
         int colIdx = 0;
-
 
         try {
             File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_recognition.dat");
@@ -76,6 +70,7 @@ public class Recognition {
                     // get key and value of the next column
                     Integer colKey = colIt.next();// ID of the columns
                     Column column = columnsMap.get(colKey); // Column object
+                    resultText[colIdx] = "";
 
                     // Get text lines in this column
                     TreeMap<Integer, TextLine> textLinesMap = column.getLines();
@@ -100,36 +95,41 @@ public class Recognition {
                             //Iterate through the symbols
                             Iterator<Integer> smbIt = symbolsMap.keySet().iterator();
                             while (smbIt.hasNext()) {
-                                Integer smbKey = smbIt.next();
-                                Symbol symbol = symbolsMap.get(smbKey);
+                                try {
+                                    Integer smbKey = smbIt.next();
+                                    Symbol symbol = symbolsMap.get(smbKey);
 
-                                // Recognize the symbol
+                                    // Recognize the symbol
 
-                                // 1) resize image to 28x28 size
-                                // 2) convert 2D 28x28 array to 1D 784x1 array
-                                // 3) add 1 "ratio" feature
-                                // 3) convert 1D array to svmNodes
-                                int [][] pixels = symbol.getPixels();
+                                    // 1) resize image to 28x28 size
+                                    // 2) convert 2D 28x28 array to 1D 784x1 array
+                                    // 3) add 1 "ratio" feature
+                                    // 3) convert 1D array to svmNodes
+                                    int[][] pixels = symbol.getPixels();
 
-                                // Get features from the pixel array
-                                ImageTransform imtrans = new ImageTransform();
-                                double[][] newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BICUBIC, 28);
-                                // convert 2D array (of BILINEAR scaling result) to 1D array
-                                double[] new1Darr = MatrixOperations.oneDimensional(newImg);
-                                // add image ratio (multiplied by 5) to the end of the array
-                                int w = pixels.length;
-                                int h = pixels[0].length;
-                                double[] features = MatrixOperations.addElement(new1Darr, (w * 5.0 / h));
+                                    // Get features from the pixel array
+                                    ImageTransform imtrans = new ImageTransform();
+                                    double[][] newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BICUBIC, 28);
+                                    // convert 2D array (of BILINEAR scaling result) to 1D array
+                                    double[] new1Darr = MatrixOperations.oneDimensional(newImg);
 
-                                for (double feat : features)
-                                    fw.write(feat + " ");
-                                fw.write("\n");
+                                    // add image ratio (multiplied by 5) to the end of the array
+                                    int w = pixels.length;
+                                    int h = pixels[0].length;
+                                    double[] features = MatrixOperations.addElement(new1Darr, (w * 5.0 / h));
 
-                                svm_node[] svmNodes = SvmHelper.featuresToSvmNodes(features);
-                                // Recognize in CAPITAL LETTERS DB
-                                double classId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
-                                // get label name by ID
-                                resultText[colIdx] += LabelManager.getSymbol(LabelManager.LabelTypeEnum.CAPITAL, (int) classId);
+                                    for (double feat : features)
+                                        fw.write(feat + " ");
+                                    fw.write("\n");
+
+                                    svm_node[] svmNodes = SvmHelper.featuresToSvmNodes(features);
+                                    // Recognize in CAPITAL LETTERS DB
+                                    double classId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
+                                    // get label name by ID
+                                    resultText[colIdx] += LabelManager.getSymbol(LabelManager.LabelTypeEnum.CAPITAL, (int) classId);
+                                } catch (Exception ex) {
+                                    Log.e(getClass().toString(), "recognize(): " + ex.toString());
+                                }
                             }
                             // word is finished, add space before the next word.
                             resultText[colIdx] += " ";

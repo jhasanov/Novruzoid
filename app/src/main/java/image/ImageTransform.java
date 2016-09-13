@@ -1,5 +1,7 @@
 package image;
 
+import android.util.Log;
+
 /**
  * Created by itjamal on 8/9/2016.
  * Code used from http://blog.demofox.org/2015/08/15/resizing-images-with-bicubic-interpolation/
@@ -27,6 +29,7 @@ public class ImageTransform {
         for (int i = 0; i < source.length; i++)
             for (int j = 0; j < source[0].length; j++)
                 newMatrix[i + xOffset][j + yOffset] = source[i][j];
+
         return newMatrix;
     }
 

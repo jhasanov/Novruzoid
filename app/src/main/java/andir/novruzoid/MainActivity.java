@@ -269,6 +269,7 @@ public class MainActivity extends Activity {
         if (!LabelManager.isbInitialized()) {
             LabelManager.loadHashes("JML");
         }
+
         String[] textResult = recognize.recognize(Recognition.RecognitionModel.SVM, "JML", columnsMap);
 
         Log.i(APP_NAME, "Recognize. Result: " + textResult[0]);
