@@ -118,9 +118,16 @@ public class Recognition {
 
                                     // Get features from the pixel array
                                     ImageTransform imtrans = new ImageTransform();
-                                    double[][] newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BICUBIC, 28);
-                                    // convert 2D array (of BILINEAR scaling result) to 1D array
-                                    double[] new1Darr = MatrixOperations.oneDimensional(newImg);
+                                    double[][] newImg;
+                                    double[] new1Darr;
+                                    try {
+                                        newImg = imtrans.resizeAndFill(pixels, ImageTransform.InterpolationMode.BICUBIC, 28);
+                                        // convert 2D array (of BILINEAR scaling result) to 1D array
+                                        new1Darr = MatrixOperations.oneDimensional(newImg);
+                                    } catch (Exception ex) {
+                                        Log.e(getClass().toString(), "recognize().resize: size1=" + pixels.length + "; size2=" + pixels[0].length);
+                                        continue;
+                                    }
 
                                     // add image ratio (multiplied by 5) to the end of the array
                                     int w = pixels.length;
@@ -139,12 +146,18 @@ public class Recognition {
                                     // Recognize in CAPITAL LETTERS DB and set it's probability as winner (default)
                                     winnerClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
 
+                                    double digitsClassId = 0.0;
                                     // Recognize in DIGITS DB
-                                    double digitsClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.DIGITS), svmNodes);
+                                    try {
+                                        digitsClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.DIGITS), svmNodes);
+                                    } catch (Exception ex) {
+                                        Log.i(getClass().toString(), "Exacly.1:" + ex.toString());
+                                    }
                                     if (digitsClassId > winnerClassId) {
                                         winnerType = LabelManager.LabelTypeEnum.DIGITS;
                                         winnerClassId = digitsClassId;
                                     }
+                                    Log.i(getClass().toString(), "3.");
 
                                     // Recognize in LETTERS
                                     double lettersClassId = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.LETTERS), svmNodes);
@@ -153,11 +166,10 @@ public class Recognition {
                                         winnerClassId = lettersClassId;
                                     }
 
-
                                     // get label name by ID from the highest probability model
                                     resultText[colIdx] += LabelManager.getSymbol(winnerType, (int) winnerClassId);
                                 } catch (Exception ex) {
-                                    Log.e(getClass().toString(), "recognize(): " + ex.toString());
+                                    Log.e(getClass().toString(), "recognize(): " + ex.getMessage());
                                 }
                             }
                             // word is finished, add space before the next word.

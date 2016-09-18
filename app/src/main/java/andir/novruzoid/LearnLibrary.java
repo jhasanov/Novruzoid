@@ -47,7 +47,7 @@ public class LearnLibrary extends Activity {
     private SimpleDateFormat sdf = new SimpleDateFormat("ddMMyy-HHmmss");
     private boolean bMapsLoaded;
     private String formName = "";
-    private ArrayList<double[]> digitFeatureList, letterFeatureList, capitalFeatureList, imageFeatureList;
+    private ArrayList<double[]> digitFeatureList, letterFeatureList, capitalFeatureList; //, imageFeatureList;
     private double[] features;
 
     // Info for Dropbox access
@@ -163,7 +163,7 @@ public class LearnLibrary extends Activity {
                 digitFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.DIGITS);
                 capitalFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.CAPITAL);
                 letterFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.LETTERS);
-                imageFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.IMAGES);
+                //imageFeatureList = LabelManager.loadFeatures(formName, LabelManager.LabelTypeEnum.IMAGES);
             }
         }
 
@@ -177,8 +177,8 @@ public class LearnLibrary extends Activity {
                 letterFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
             else if (selectedType == LabelManager.LabelTypeEnum.CAPITAL)
                 capitalFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
-            else if (selectedType == LabelManager.LabelTypeEnum.IMAGES)
-                imageFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features));
+            /*else if (selectedType == LabelManager.LabelTypeEnum.IMAGES)
+                imageFeatureList.add(MatrixOperations.mergeArrays(new double[]{classId}, features)); */
         }
         // paint next character and keep pixel info in pixelArrStr string
         showNext();
@@ -201,19 +201,19 @@ public class LearnLibrary extends Activity {
         LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.DIGITS, digitFeatureList);
         LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.LETTERS, letterFeatureList);
         LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.CAPITAL, capitalFeatureList);
-        LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.IMAGES, imageFeatureList);
+        //LabelManager.saveFeatures(formName, LabelManager.LabelTypeEnum.IMAGES, imageFeatureList);
 
         // Classes with their IDs will be saved in corresponding files
         LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.DIGITS);
         LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.LETTERS);
         LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.CAPITAL);
-        LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.IMAGES);
+        //LabelManager.saveHash(formName, LabelManager.LabelTypeEnum.IMAGES);
 
         // Upload to Dropbox
         uploadToDropbox(formName + "_digits_dict" + ".dat");
         uploadToDropbox(formName + "_letters_dict" + ".dat");
         uploadToDropbox(formName + "_capitals_dict" + ".dat");
-        uploadToDropbox(formName + "_images_dict" + ".dat");
+        //uploadToDropbox(formName + "_images_dict" + ".dat");
 
         // TODO: upload feature files to Dropbox as well
 
@@ -337,8 +337,8 @@ public class LearnLibrary extends Activity {
             selectedType = LabelManager.LabelTypeEnum.LETTERS;
         else if (capitalRB.isChecked())
             selectedType = LabelManager.LabelTypeEnum.CAPITAL;
-        else if (imageRB.isChecked())
-            selectedType = LabelManager.LabelTypeEnum.IMAGES;
+        /*else if (imageRB.isChecked())
+            selectedType = LabelManager.LabelTypeEnum.IMAGES;*/
 
         classTypeEB.requestFocus();
     }

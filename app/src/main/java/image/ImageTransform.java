@@ -1,7 +1,5 @@
 package image;
 
-import android.util.Log;
-
 /**
  * Created by itjamal on 8/9/2016.
  * Code used from http://blog.demofox.org/2015/08/15/resizing-images-with-bicubic-interpolation/
@@ -9,6 +7,9 @@ import android.util.Log;
 public class ImageTransform {
 
     public enum InterpolationMode {BILINEAR, BICUBIC}
+
+    // used for debugging
+    int[][] dPixels;
 
     // this method places the given matrix in the center of a new matrix with given W and H sizes.
     // throws error if new boundary is less than the given matrix
@@ -53,14 +54,16 @@ public class ImageTransform {
         int w = pixels.length;
         int h = pixels[0].length;
 
-        double dScale = newWidth / Math.max(w, h);
+        dPixels = pixels;
+        double dScale = 1.0 * newWidth / Math.max(w, h);
         int wscale, hscale;
         if (w > h) {
             wscale = newWidth;
-            hscale = (int) (h * dScale);
+            // max(0 is used to eliminate the 0 case.
+            hscale = Math.max((int) (h * dScale), 1);
         } else {
             hscale = newWidth;
-            wscale = (int) (w * dScale);
+            wscale = Math.max((int) (w * dScale), 1);
         }
 
         ImageTransform imtrans = new ImageTransform();
@@ -175,15 +178,11 @@ public class ImageTransform {
     }
 
     public static void main(String[] args) {
-        int[][] source = {{1, 0, 0, 0, 0, 0, 1, 0},
-                {0, 1, 0, 0, 0, 1, 0, 0},
-                {0, 0, 1, 0, 1, 0, 0, 0},
-                {0, 0, 0, 1, 0, 0, 0, 0},
-                {0, 0, 1, 0, 1, 0, 0, 0},
-                {0, 1, 0, 0, 0, 1, 0, 0},
-                {1, 0, 0, 0, 0, 0, 1, 0}};
+        int[][] source = new int[173][4];
 
+        source[1][1] = 1;
 
+        /*
         for (int j = 0; j < source[0].length; j++) {
             for (int i = 0; i < source.length; i++) {
                 System.out.print(source[i][j] + " ");
@@ -191,16 +190,37 @@ public class ImageTransform {
             System.out.println();
         }
         System.out.println();
+        */
 
         ImageTransform it = new ImageTransform();
-        double[][] newImage = it.fillMatrix(it.resize(source, InterpolationMode.BILINEAR, 14, 10), 14, 14);
-        //double[][] newImage = it.resize(source, InterpolationMode.BILINEAR, 14, 10);
+        double[][] newImage = it.resizeAndFill(source, InterpolationMode.BICUBIC, 28);
+
         for (int j = 0; j < newImage[0].length; j++) {
             for (int i = 0; i < newImage.length; i++) {
                 System.out.print((int) newImage[i][j] + " ");
             }
             System.out.println();
         }
+
+        /*for (int i = 0; i<1000; i++) {
+            Random rand = new Random();
+
+            // nextInt is normally exclusive of the top value,
+            // so add 1 to make it inclusive
+            int w = rand.nextInt((30 - 3) + 1) + 3;
+            int h = rand.nextInt((30 - 3) + 1) + 3;
+
+            int[][] test = new int [w][h];
+
+            test[1][1] = 1;
+
+            System.out.println("Cycle: "+i+" w="+w+"; h="+h);
+            ImageTransform it = new ImageTransform();
+            double[][] newImage = it.resizeAndFill(test, InterpolationMode.BICUBIC, 28);
+        }*/
+
+
     }
 
 }
+

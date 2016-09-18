@@ -30,9 +30,9 @@ public class LabelManager {
     private static Integer digitSeqId = 0;
     private static Integer letterSeqId = 0;
     private static Integer capitalSeqId = 0;
-    private static Integer imageSeqId = 0;
-    private static Hashtable<String, Integer> htDigits, htLetters, htCapitals, htImages;
-    private static Hashtable<Integer, String> htrDigits, htrLetters, htrCapitals, htrImages;
+    //private static Integer imageSeqId = 0;
+    private static Hashtable<String, Integer> htDigits, htLetters, htCapitals; //, htImages;
+    private static Hashtable<Integer, String> htrDigits, htrLetters, htrCapitals; //, htrImages;
     public static ArrayList<Symbol> symbolList = new ArrayList<Symbol>();
 
     public enum LabelTypeEnum {
@@ -53,11 +53,11 @@ public class LabelManager {
             htDigits = loadHash(formName, LabelTypeEnum.DIGITS);
             htLetters = loadHash(formName, LabelTypeEnum.LETTERS);
             htCapitals = loadHash(formName, LabelTypeEnum.CAPITAL);
-            htImages = loadHash(formName, LabelTypeEnum.IMAGES);
+            //htImages = loadHash(formName, LabelTypeEnum.IMAGES);
             htrDigits = reverseHash(htDigits);
             htrLetters = reverseHash(htLetters);
             htrCapitals = reverseHash(htCapitals);
-            htrImages = reverseHash(htImages);
+            //htrImages = reverseHash(htImages);
             bInitialized = true;
             return true;
         } catch (Exception ex) {
@@ -120,10 +120,10 @@ public class LabelManager {
         } else if (symbolType == LabelTypeEnum.CAPITAL) {
             htMap = htCapitals;
             filePrefix = "capital_dict";
-        } else if (symbolType == LabelTypeEnum.IMAGES) {
+        } /*else if (symbolType == LabelTypeEnum.IMAGES) {
             htMap = htImages;
             filePrefix = "images_dict";
-        }
+        }*/
 
         try {
             File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_" + filePrefix + ".dat");
@@ -162,13 +162,13 @@ public class LabelManager {
                 htCapitals.put(classDesc, ++capitalSeqId);
                 classId = capitalSeqId;
             }
-        } else if (symbolType == LabelTypeEnum.IMAGES) {
+        } /* else if (symbolType == LabelTypeEnum.IMAGES) {
             classId = htImages.get(classDesc);
             if (classId == null) {
                 htImages.put(classDesc, ++imageSeqId);
                 classId = imageSeqId;
             }
-        }
+        }*/
         return classId;
     }
 
@@ -191,12 +191,9 @@ public class LabelManager {
             symbol = htrLetters.get(id);
         } else if (symbolType == LabelTypeEnum.CAPITAL) {
             symbol = htrCapitals.get(id);
-        } else if (symbolType == LabelTypeEnum.IMAGES) {
+        } /*else if (symbolType == LabelTypeEnum.IMAGES) {
             symbol = htrImages.get(id);
-        }
-
-        if (symbol == null)
-            symbol = "?";
+        } */
 
         return symbol;
     }
