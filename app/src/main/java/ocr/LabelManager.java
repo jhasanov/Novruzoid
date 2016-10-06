@@ -91,6 +91,7 @@ public class LabelManager {
             String line = "";
             StringTokenizer tokenizer;
 
+            Log.i(CLASS_NAME, "Reading hash: " + symbolType.toString());
             while ((line = br.readLine()) != null) {
                 Log.i(CLASS_NAME, "readLine: " + line);
                 tokenizer = new StringTokenizer(line, " ");

@@ -20,4 +20,17 @@ public class svm_model implements java.io.Serializable
 	public int[] label;		// label of each class (label[k])
 	public int[] nSV;		// number of SVs for each class (nSV[k])
 				// nSV[0] + nSV[1] + ... + nSV[k-1] = l
-};
+
+
+	/* Added by Jamal
+	 This array keeps the count of elements for each SV (as there's no dynamic arrays in Java).
+	 Example: Let's assume, we have SV[100]255] - 100 SVs with 255 features each. But according to
+	 LibSVM logic, we keep only Not Null elements. Like, if 34th SV has only 75 Not Null features,
+	 the call to  SV[100][76] will raise NullPointerException. To avoid this, we use this colIdx,
+	 which stores coldIdx[100] = 75. In all loops we use:
+	 	for (i=0; i<colIdx[sv_seq_no); i++)
+	 		instead of
+	 	for (i=0; i<SV[sv_seq_no).length; i++)
+	*/
+	public int[] colIdx;
+}

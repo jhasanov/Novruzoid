@@ -134,8 +134,8 @@ public class SvmHelper {
         for (double[] features : testData) {
             double desiredClass = features[0];
             svm_node[] nodes = featuresToSvmNodes(Arrays.copyOfRange(features, 1, featlen));
-            double classId = svm.svm_predict(model, nodes);
-            if (desiredClass == classId) {
+            double[] classId = svm.svm_predict(model, nodes);
+            if (desiredClass == classId[0]) {
                 positives++;
             }
         }
@@ -488,6 +488,7 @@ public class SvmHelper {
 
                     // Set value
                     model.SV = SV;
+                    model.colIdx = colIdx;
                 }
 
 
@@ -543,12 +544,12 @@ public class SvmHelper {
                 for (double[] features : trainingSamples) {
                     double desiredClass = features[0];
                     svm_node[] nodes = featuresToSvmNodes(Arrays.copyOfRange(features, 1, featlen));
-                    double classId = svm.svm_predict(model, nodes);
-                    if (desiredClass == classId) {
+                    double[] svmResult = svm.svm_predict(model, nodes);
+                    if (desiredClass == svmResult[0]) {
                         positives++;
-                        System.out.println("Correct : " + desiredClass + "=" + classId);
+                        System.out.println("Correct : " + desiredClass + "=" + svmResult[0]);
                     } else {
-                        System.out.println("Wrong : " + desiredClass + "<>" + classId);
+                        System.out.println("Wrong : " + desiredClass + "<>" + svmResult[0]);
                     }
                 }
                 System.out.println("Test result: " + (positives * 100 / samples) + "% (" + positives + "/" + samples + ")");
