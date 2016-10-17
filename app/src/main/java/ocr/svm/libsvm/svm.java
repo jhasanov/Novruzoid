@@ -2164,7 +2164,8 @@ public class svm {
 
     public static double[] svm_predict_values(svm_model model, svm_node[] x, double[] dec_values) {
         int i;
-        double max_sum = 0.0;
+        // Added by Jamal to identify the closest distance to the support vectors
+        double total_sum = 0.0;
 
         if (model.param.svm_type == svm_parameter.ONE_CLASS ||
                 model.param.svm_type == svm_parameter.EPSILON_SVR ||
@@ -2185,7 +2186,7 @@ public class svm {
 
         } else {
             int nr_class = model.nr_class;
-            int l = model.l;
+            int l = model.l; // total SV count
 
             double[] kvalue = new double[l];
             for (i = 0; i < l; i++) {
@@ -2220,8 +2221,14 @@ public class svm {
                     sum -= model.rho[p];
                     dec_values[p] = sum;
 
+                    total_sum += sum;
+
+                    /* Commenting, because, there's no meaning.
+                    this code also doesn't exist in CPP
+
                     if (sum > max_sum)
                         max_sum = sum;
+                    */
 
                     if (dec_values[p] > 0)
                         ++vote[i];

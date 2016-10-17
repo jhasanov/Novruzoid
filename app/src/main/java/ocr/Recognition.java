@@ -125,7 +125,7 @@ public class Recognition {
                                         // convert 2D array (of BILINEAR scaling result) to 1D array
                                         new1Darr = MatrixOperations.oneDimensional(newImg);
                                     } catch (Exception ex) {
-                                        Log.e(getClass().toString(), "recognize().resize: size1=" + pixels.length + "; size2=" + pixels[0].length);
+                                        Log.e(getClass().toString(), "Error. recognize().resize: size1=" + pixels.length + "; size2=" + pixels[0].length);
                                         continue;
                                     }
 
@@ -142,28 +142,28 @@ public class Recognition {
 
                                     LabelManager.LabelTypeEnum winnerType = LabelManager.LabelTypeEnum.CAPITAL;
                                     double winnerClassId;
-                                    double maxSum;
+                                    double minSum;
                                     double[] svmResult;
 
                                     // Recognize in CAPITAL LETTERS DB and set it's probability as winner (default)
                                     svmResult = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.CAPITAL), svmNodes);
                                     winnerClassId = svmResult[0];
-                                    maxSum = svmResult[1];
-                                    String resVals = "CAPITAL: " + maxSum;
+                                    minSum = svmResult[1];
+                                    String resVals = "CAPITAL: " + minSum;
 
                                     // Recognize in DIGITS DB
                                     svmResult = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.DIGITS), svmNodes);
                                     resVals += " DIGITS: " + svmResult[1];
-                                    if (svmResult[1] > maxSum) {
+                                    if (svmResult[1] < minSum) {
                                         winnerType = LabelManager.LabelTypeEnum.DIGITS;
                                         winnerClassId = svmResult[0];
-                                        maxSum = svmResult[1];
+                                        minSum = svmResult[1];
                                     }
 
                                     // Recognize in LETTERS
                                     svmResult = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.LETTERS), svmNodes);
                                     resVals += " LETTERS: " + svmResult[1];
-                                    if (svmResult[1] > maxSum) {
+                                    if (svmResult[1] < minSum) {
                                         winnerType = LabelManager.LabelTypeEnum.LETTERS;
                                         winnerClassId = svmResult[0];
                                     }
@@ -178,7 +178,6 @@ public class Recognition {
                             }
                             // word is finished, add space before the next word.
                             resultText[colIdx] += " ";
-
                         }
                         // line is ended, new line.
                         resultText[colIdx] += "\n";
