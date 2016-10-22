@@ -2221,7 +2221,6 @@ public class svm {
                     sum -= model.rho[p];
                     dec_values[p] = sum;
 
-                    total_sum += sum;
 
                     /* Commenting, because, there's no meaning.
                     this code also doesn't exist in CPP
@@ -2242,7 +2241,7 @@ public class svm {
                 if (vote[i] > vote[vote_max_idx])
                     vote_max_idx = i;
 
-            return new double[]{model.label[vote_max_idx], vote[vote_max_idx] * 1.0 / nr_class};
+            return new double[]{model.label[vote_max_idx], total_sum};
         }
     }
 

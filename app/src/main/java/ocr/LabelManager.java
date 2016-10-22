@@ -36,7 +36,7 @@ public class LabelManager {
     public static ArrayList<Symbol> symbolList = new ArrayList<Symbol>();
 
     public enum LabelTypeEnum {
-        NONE, DIGITS, LETTERS, CAPITAL, IMAGES,
+        NONE, ALL, DIGITS, LETTERS, CAPITAL, IMAGES,
     }
 
     //static {

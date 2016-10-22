@@ -531,18 +531,20 @@ public class SvmHelper {
         } else if (args[0].equals("test")) {
             System.out.println("Performing test...\n");
 
-            String modelFile = "D:\\Dropbox\\TEMP\\JML_CAPITAL_model";
-            String octaveModelFile = "D:\\Dropbox\\TEMP\\JML_CAPITAL_model_octave";
-            double[][] trainingSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP\\TEST", LabelManager.LabelTypeEnum.CAPITAL);
+            String modelFile = "D:\\Dropbox\\TEMP\\JML_ALL_model";
+            //double[][] testSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP\\TEST", LabelManager.LabelTypeEnum.CAPITAL);
+            double[][] testSamples = LabelManager.loadFeaturesAsArray("JML", "D:\\Dropbox\\TEMP\\TEST", LabelManager.LabelTypeEnum.ALL);
             int positives = 0;
-            int samples = trainingSamples.length;
-            int featlen = trainingSamples[0].length;
+            int samples = testSamples.length;
+            int featlen = testSamples[0].length;
 
             try {
-                //svm_model model = svm.svm_load_model(modelFile);
-                svm_model model = loadFromMatlabFile(octaveModelFile);
-                for (double[] features : trainingSamples) {
+                svm_model model = loadFromMatlabFile(modelFile);
+                for (double[] features : testSamples) {
                     double desiredClass = features[0];
+                    /*
+                    When 1st columns is a label ID
+
                     svm_node[] nodes = featuresToSvmNodes(Arrays.copyOfRange(features, 1, featlen));
                     double[] svmResult = svm.svm_predict(model, nodes);
                     if (desiredClass == svmResult[0]) {
@@ -551,8 +553,14 @@ public class SvmHelper {
                     } else {
                         System.out.println("Wrong : " + desiredClass + "<>" + svmResult[0]);
                     }
+                    */
+
+                    /* When file contains only featues */
+                    svm_node[] nodes = featuresToSvmNodes(features);
+                    double[] svmResult = svm.svm_predict(model, nodes);
+                    System.out.println("Result : LabelID=" + svmResult[0] + "; Value=" + svmResult[1]);
                 }
-                System.out.println("Test result: " + (positives * 100 / samples) + "% (" + positives + "/" + samples + ")");
+                //System.out.println("Test result: " + (positives * 100 / samples) + "% (" + positives + "/" + samples + ")");
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
