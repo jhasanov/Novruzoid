@@ -9,6 +9,7 @@ import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -32,7 +33,7 @@ public class MainActivity extends Activity {
     //ArrayList<Symbol> symbolList = new ArrayList<Symbol>();
     LinearLayout camImgView;
     public DrawingView drawView;
-    String fileName = "";
+    String fileName = "";//"/sdcard/image.jpg"; // Default image (when "Segment" is pressed directly)
     Bitmap capturedBmp, croppedBmp;
     double inSampleSize = 1.0;
     double scaleX = 1.0;
@@ -46,21 +47,25 @@ public class MainActivity extends Activity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
-        drawView = new DrawingView(this);
+/*        drawView = new DrawingView(this);
         camImgView = (LinearLayout) findViewById(R.id.CamImageView);
         camImgView.addView(drawView);
         drawView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        */
+        drawView = (DrawingView) findViewById(R.id.CamImageView);
+
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == CAMSHOT_ACTIVITY) {
             if (resultCode == RESULT_OK) {
-                scrWidth = drawView.getWidth();
-                scrHeight = drawView.getHeight();
+                DisplayMetrics dm = getResources().getDisplayMetrics();
+                scrWidth = dm.widthPixels;
+                scrHeight = dm.heightPixels;
 
                 capturedBmp = decodeSampledBitmapFromFile(fileName, scrWidth, scrHeight);
-                drawView.setBitmap(capturedBmp);
+                drawView.setImageBitmap(capturedBmp);
                 drawView.invalidate();
             } else if (resultCode == RESULT_CANCELED) {
                 // User cancelled the image capture
@@ -169,8 +174,9 @@ public class MainActivity extends Activity {
             Matrix matrix = new Matrix();
             matrix.preRotate(rotationAngle);
 
-            matrix.postScale((float) (1.0 / inSampleSize), (float) (1.0 / inSampleSize));
+            //matrix.postScale((float) (1.0 / inSampleSize), (float) (1.0 / inSampleSize));
             croppedBitmap = Bitmap.createBitmap(bm, x, y, width, height, matrix, true);
+            //croppedBitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
         } catch (Exception ex) {
             Log.e(APP_NAME, ex.toString());
         }
@@ -207,34 +213,30 @@ public class MainActivity extends Activity {
             maxY = Math.max(maxY, points[i * 2 + 1]);
         }
         Log.i(APP_NAME, "minX=" + minX + "; minY=" + minY + "; width=" + (maxX - minX) + "; height=" + (maxY - minY));
+        Log.i(APP_NAME, "fileName = " + fileName);
         croppedBmp = decodeCroppedBitmapFromFile(fileName, (int) (minX * inSampleSize), (int) (minY * inSampleSize),
                 (int) ((maxX - minX) * inSampleSize), (int) ((maxY - minY) * inSampleSize),
                 scrWidth, scrHeight);
-        /*croppedBmp = decodeCroppedBitmapFromFile(fileName,(int)(minX*scaleX),(int)(minY*scaleY),
-                (int)((maxX-minX)*scaleX), (int)((maxY-minY)*scaleY),
-                scrWidth,scrHeight);*/
 
-        drawView.setBitmap(croppedBmp);
+        drawView.setImageBitmap(croppedBmp);
+        drawView.setOperationType(DrawingView.OperationType.SEGMENT);
         drawView.setDrawLines(false);
         drawView.invalidate();
+        drawView.setScroll(true);
 
         // Call uncle JNI
         ImageProc imgProc = new ImageProc();
         String msg = imgProc.getMessageFromJni();
         Log.i(APP_NAME, "JNI says: " + msg);
 
-        Bitmap bmp = drawView.getBitmap();
-        Bitmap.Config config = bmp.getConfig();
-        Log.i(APP_NAME, "BITMAP CONFIG: " + config);
-
-        int w = bmp.getWidth();
-        int h = bmp.getHeight();
-        //int [] pixels = new int[w*h];
-        //bmp.getPixels(pixels,0,w,0,0,w,h);
+        int w = croppedBmp.getWidth();
+        int h = croppedBmp.getHeight();
 
         Log.i(APP_NAME, "Starting to segment...");
-        columnsMap = imgProc.getSegments(bmp, w, h);
+        columnsMap = imgProc.getSegments(croppedBmp, w, h);
 
+        Bitmap bwBmp = imgProc.getImgSeg().getImageInfo().getBitmapImage();
+        drawView.setImageBitmap(bwBmp);
         drawView.setSegmentElements(columnsMap);
         drawView.setSegments(true);
     }

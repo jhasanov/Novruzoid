@@ -12,17 +12,29 @@ import image.segment.elements.Column;
  * Created by itjamal on 3/22/2016.
  */
 public class ImageProc {
-
+    private ImageSegment imgSeg;
 
     static {
         System.loadLibrary("imageproc-jni");
     }
 
 
+    public ImageProc() {
+        imgSeg = new ImageSegment();
+    }
+
+    public ImageSegment getImgSeg() {
+        return imgSeg;
+    }
+
+    public void setImgSeg(ImageSegment imgSeg) {
+        this.imgSeg = imgSeg;
+    }
+
     public float [] getEdges() {
         float [] edges;
 
-        edges = new float[]{59, 69, 169,69, 188,210,55,340};
+        edges = new float[]{69, 69, 169, 69, 169, 269, 69, 269};
 
         return edges;
     }
@@ -31,7 +43,6 @@ public class ImageProc {
 
     //public native int [] getSegments(int [] pixels, int w, int h);
     public TreeMap<Integer,Column> getSegments(Bitmap image, int w, int h) {
-        ImageSegment imgSeg = new ImageSegment();
         Log.i(this.getClass().toString(), "Calling processImage");
         imgSeg.processImage(image, true);
         Log.i(this.getClass().toString(), "Calling segmentImage");

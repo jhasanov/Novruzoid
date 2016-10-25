@@ -5,6 +5,8 @@
 package image;
 
 
+import android.graphics.Bitmap;
+
 /**
  *
  * @author jamal
@@ -53,5 +55,7 @@ public abstract class ImageInfo {
     }
     
     public abstract void setInfoType(int infoType);
+
+    public abstract Bitmap getBitmapImage();
 
 }
