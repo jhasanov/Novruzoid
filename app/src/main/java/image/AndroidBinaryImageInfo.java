@@ -7,7 +7,6 @@ package image;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.util.Log;
 
 /**
@@ -79,7 +78,7 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
 
             setHeight(image.getHeight());
             setWidth(image.getWidth());
-            int partSize = Math.min(height, 5 * SQUARE_SIZE);
+            int partSize = Math.min(height, SQUARE_SIZE);
             Log.d("convertToPixelArr(Bitmap)", "HEIGHT=" + height + "; WIDTH=" + width);
 
             pixelArrH = new int[(int) Math.ceil(width / 31.0)][height];
@@ -115,7 +114,6 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
      * From "Digital Image Processing: a practical introduction using Java(2000)" book.
      * Page 279, algorithm 10.1
      * 
-     * @param bimg source grayscale image
      */
     public void convertToPixelArr(int partIdx, int[] colArr) {
         int imgPartHeight = colArr.length / width;
@@ -138,7 +136,7 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
 
             Log.d("convertToPixelArr()", "Starting loop");
 
-            // tthresholding by 31/31 squares.
+            // thresholding by 31/31 squares.
             for (int j = 0; j < imgPartHeight / SQUARE_SIZE; j++) {
                 //Log.i("convertToPixelArr()", "j = " + j);
                 for (int i = 0; i < width / SQUARE_SIZE; i++) {

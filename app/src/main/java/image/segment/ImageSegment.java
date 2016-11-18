@@ -217,7 +217,7 @@ public class ImageSegment {
         AndroidBinaryImageInfo abii = new AndroidBinaryImageInfo();
         Log.i(this.getClass().toString(), "conversion is finished");
 
-        abii.convertToPixelArr(image, 1, bSquareBased);
+        abii.convertToPixelArr(image, 4, bSquareBased);
         //bii.testIt();
         Log.i(this.getClass().toString(), "conversion is finished");
 
@@ -272,7 +272,7 @@ public class ImageSegment {
          * 3. Iterating over the MultiMap and create a Symbol element.
          */
         for (columnIdx = 0; columnIdx < columnsMap.size(); columnIdx++) {
-            Column col = (Column) columnsMap.get(columnIdx);
+            Column col = columnsMap.get(columnIdx);
 
             //ImageSegment imgSeg = new ImageSegment();
             //imgSeg.getBorders(GRAY_THRES, col.getBorders());
@@ -307,22 +307,22 @@ public class ImageSegment {
                         //Log.i("segmentImage", "pixels : " + p.x + "," + p.y + ")");
 
                         if (minX == -1) {
-                            minX = (int) p.x;
-                            minY = (int) p.y;
-                            maxX = (int) p.x;
-                            maxY = (int) p.y;
+                            minX = p.x;
+                            minY = p.y;
+                            maxX = p.x;
+                            maxY = p.y;
                         }
 
                         if (p.x < minX) {
-                            minX = (int) p.x;
+                            minX = p.x;
                         } else if (p.x > maxX) {
-                            maxX = (int) p.x;
+                            maxX = p.x;
                         }
 
                         if (p.y < minY) {
-                            minY = (int) p.y;
+                            minY = p.y;
                         } else if (p.y > maxY) {
-                            maxY = (int) p.y;
+                            maxY = p.y;
                         }
                     }
 
@@ -341,7 +341,7 @@ public class ImageSegment {
                         while (pixelsItr.hasNext()) {
                             Point p = (Point) pixelsItr.next();
                             try {
-                                pixelArr[(int) p.x - minX][(int) p.y - minY] = 1;
+                                pixelArr[p.x - minX][p.y - minY] = 1;
                                 pixCnt++;
                             } catch (Exception ex) {
                                 System.out.println("ImageSegment.segmentImage() : minX=" + minX + "; minY=" + minY + "; maxX=" + maxX + "; maxY=" + maxY + "; W=" + (maxX - minX) + "; H=" + (maxY - minY) + "; getX()=" + p.x + "; getY()=" + p.y);
@@ -416,7 +416,7 @@ public class ImageSegment {
         Iterator it = columnsMap.keySet().iterator();
         while (it.hasNext()) {
             Integer colKey = (Integer) it.next();
-            Column col = (Column) columnsMap.get(colKey);
+            Column col = columnsMap.get(colKey);
             TreeMap textLinesMap = col.getLines();
 
             Iterator it2 = textLinesMap.keySet().iterator();
@@ -431,7 +431,7 @@ public class ImageSegment {
                 } // If height of the list is less then average text width and contains only dots, then merge it with next line (bottom)
                 else if (textLine.getBorders().getHeight() < 0.4 * Element.AVERAGE_SYMBOL_WIDTH) {
                     try {
-                        Word wordOfSmallLine = (Word) textLine.getWords().get(0);
+                        Word wordOfSmallLine = textLine.getWords().get(0);
                         Rectangle prevBdrs = textLine.getBorders();
                         // If all of symbols are dots
                         //if (wordOfSmallLine.getDotCnt() == wordOfSmallLine.getSymbols().size()) {

@@ -17,7 +17,6 @@ import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.widget.OverScroller;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -29,7 +28,7 @@ import ocr.LabelManager;
 import utils.Rectangle;
 
 public class DrawingView extends ImageView {
-    Paint mPaint, mSegment;
+    Paint mPaint, mSegment, gridPaint;
     float[] points;
 
     enum OperationType {CAMERA, SEGMENT}
@@ -42,7 +41,7 @@ public class DrawingView extends ImageView {
     ImageProc imgProc = new ImageProc();
     float downX, downY;
     int pointIdx = -1;
-    boolean bDrawLines = true, bDrawSegments = false;
+    boolean bDrawLines = true, bDrawSegments = false, bDrawGrids = false;
 
     private GestureDetectorCompat gestureDetector;
     private OverScroller overScroller;
@@ -61,6 +60,11 @@ public class DrawingView extends ImageView {
         mPaint = new Paint();
         mPaint.setColor(Color.GREEN);
         mPaint.setStyle(Paint.Style.STROKE);
+
+        gridPaint = new Paint();
+        gridPaint.setColor(Color.RED);
+        gridPaint.setStyle(Paint.Style.STROKE);
+
         mSegment = new Paint();
 
         DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -122,8 +126,18 @@ public class DrawingView extends ImageView {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        if (bDrawGrids) {
+            //draw 31x31 grids
+            for (int i = 1; i < getWidth() / 31; i++) {
+                canvas.drawLine(i * 31, 0, i * 31, getHeight(), gridPaint);
+            }
+            for (int i = 1; i < getHeight() / 31; i++) {
+                canvas.drawLine(0, i * 31, getWidth(), i * 31, gridPaint);
+            }
+        }
+
         if (bDrawLines) {
-            LabelManager.symbolList = new ArrayList<Symbol>();
+            //LabelManager.symbolList = new ArrayList<Symbol>();
             Path path = new Path();
 
             path.moveTo(points[0], points[1]);
@@ -213,8 +227,16 @@ public class DrawingView extends ImageView {
         return points;
     }
 
+    public void setPoints(float[] p) {
+        points = p;
+    }
+
     public void setDrawLines(boolean bDrawLines) {
         this.bDrawLines = bDrawLines;
+    }
+
+    public void setDrawGrids(boolean bDrawGrids) {
+        this.bDrawGrids = bDrawGrids;
     }
 
     public void setSegments(boolean bDrawSegments) {

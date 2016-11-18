@@ -9,12 +9,18 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="andir.novruzoid.ResultActivity">
 
-    <TextView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:text="Recognition result will be here"
-        android:id="@+id/resultView"
-        android:layout_centerHorizontal="true"
-        android:textIsSelectable="false"
-        android:layout_alignParentTop="true" />
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/scrollView">
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:text="Recognition result will be here"
+            android:id="@+id/resultView"
+            android:layout_centerHorizontal="true"
+            android:textIsSelectable="false"
+            android:layout_alignParentTop="true" />
+    </ScrollView>
 </RelativeLayout>

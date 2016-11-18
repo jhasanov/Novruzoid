@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.TreeMap;
 
+import image.AndroidBinaryImageInfo;
+import image.BorderDetection;
 import image.segment.elements.Column;
 import ocr.LabelManager;
 import ocr.Recognition;
@@ -65,7 +67,20 @@ public class MainActivity extends Activity {
                 scrHeight = dm.heightPixels;
 
                 capturedBmp = decodeSampledBitmapFromFile(fileName, scrWidth, scrHeight);
-                drawView.setImageBitmap(capturedBmp);
+
+                // Added for test purposes
+                AndroidBinaryImageInfo abii = new AndroidBinaryImageInfo();
+                abii.convertToPixelArr(capturedBmp, 4, true);
+                Bitmap bwBmp = abii.getBitmapImage();
+                BorderDetection bd = new BorderDetection();
+                float[] borders = bd.findBorders(abii);
+
+                drawView.setPoints(borders);
+                drawView.setImageBitmap(bwBmp);
+                drawView.setDrawGrids(true);
+                //----
+
+                //drawView.setImageBitmap(capturedBmp);
                 drawView.invalidate();
             } else if (resultCode == RESULT_CANCELED) {
                 // User cancelled the image capture
