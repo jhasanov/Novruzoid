@@ -14,6 +14,7 @@ import image.segment.elements.Column;
 import image.segment.elements.Symbol;
 import image.segment.elements.TextLine;
 import image.segment.elements.Word;
+import ocr.lexicon.LexClass1;
 import ocr.svm.libsvm.SvmHelper;
 import ocr.svm.libsvm.svm;
 import ocr.svm.libsvm.svm_model;
@@ -67,6 +68,9 @@ public class Recognition {
     public String[] recognize(RecognitionModel recModel, String formName, TreeMap<Integer, Column> columnsMap) {
         String[] resultText = new String[0];
         int colIdx = 0;
+        LabelManager.LabelTypeEnum labelType;
+        boolean bDocTypeDefined = false;
+        LexClass1 lexClass = new LexClass1();
 
         try {
             File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_recognition.dat");
@@ -90,6 +94,9 @@ public class Recognition {
                     //Iterate through the text lines
                     Iterator<Integer> tlIt = textLinesMap.keySet().iterator();
                     int ii = 0;
+                    // In the start, recognize all symbols as capital
+                    labelType = LabelManager.LabelTypeEnum.CAPITAL;
+
                     while (tlIt.hasNext()) {
                         // get key and value of the next text line
                         Integer tlKey = tlIt.next(); // ID of the text line
@@ -107,6 +114,7 @@ public class Recognition {
                             TreeMap<Integer, Symbol> symbolsMap = word.getSymbols();
                             //Iterate through the symbols
                             Iterator<Integer> smbIt = symbolsMap.keySet().iterator();
+                            String wordText = "";
                             while (smbIt.hasNext()) {
                                 try {
                                     Integer smbKey = smbIt.next();
@@ -145,34 +153,40 @@ public class Recognition {
                                     svm_node[] svmNodes = SvmHelper.featuresToSvmNodes(features);
                                     double[] svmResult;
 
-                                    // define the type of the object  - Capital(1), Digit(2) or Letter(3)
-                                    svmResult = svm.svm_predict(svmModels.get(LabelManager.LabelTypeEnum.ALL), svmNodes);
-                                    int labelTypeId = (int) svmResult[0];
-
-                                    LabelManager.LabelTypeEnum winnerType;
-                                    // Capital
-                                    if (labelTypeId == 1) {
-                                        winnerType = LabelManager.LabelTypeEnum.CAPITAL;
-                                    }
-                                    // Digit
-                                    else if (labelTypeId == 2) {
-                                        winnerType = LabelManager.LabelTypeEnum.DIGITS;
-                                    }
-                                    // Letter
-                                    else {
-                                        winnerType = LabelManager.LabelTypeEnum.LETTERS;
-                                    }
-                                    svmResult = svm.svm_predict(svmModels.get(winnerType), svmNodes);
-                                    double winnerClassId = svmResult[0];
+                                    svmResult = svm.svm_predict(svmModels.get(labelType), svmNodes);
+                                    double classId = svmResult[0];
 
                                     // get label name by ID from the winner model
-                                    resultText[colIdx] += LabelManager.getSymbol(winnerType, (int) winnerClassId);
+                                    wordText += LabelManager.getSymbol(labelType, (int) classId);
                                 } catch (Exception ex) {
                                     Log.e(getClass().toString(), "recognize(): " + ex.getMessage());
                                 }
                             }
+
+                            // Word is ready: check what it is
+                            // 1) If document type is not defined, then try to find what type of document is this.
+                            if (!bDocTypeDefined) {
+                                String docTypeName = lexClass.defineDocAuthor(wordText);
+                                if (docTypeName != "") {
+                                    bDocTypeDefined = true;
+                                    wordText = docTypeName + "(1)";
+                                } else {
+                                    if (lexClass.isVOEN(wordText)) {
+                                        wordText += "(v)";
+                                        labelType = LabelManager.LabelTypeEnum.DIGITS;
+                                        // TODO : find a proper way to do this.
+                                    }
+                                }
+                            } else if (lexClass.isDate(wordText)) {
+                                wordText += "(2)";
+                                // switch to digits & symbols
+                            } else if (lexClass.isTime(wordText)) {
+                                wordText += "(3)";
+                                // switch to digits & symbols
+                            }
+
                             // word is finished, add space before the next word.
-                            resultText[colIdx] += " ";
+                            resultText[colIdx] += wordText + " ";
                         }
                         // line is ended, new line.
                         resultText[colIdx] += "\n";

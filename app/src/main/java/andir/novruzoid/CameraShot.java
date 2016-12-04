@@ -53,7 +53,6 @@ public class CameraShot extends Activity implements OnClickListener, SurfaceHold
             // Defining parameters
             parameters.setColorEffect(Camera.Parameters.EFFECT_MONO);
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-            //parameters.setPictureSize(2448,3264);
             parameters.setPictureSize(2048,1536);
 
             if (this.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {

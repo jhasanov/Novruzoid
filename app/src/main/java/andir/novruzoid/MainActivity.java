@@ -76,11 +76,12 @@ public class MainActivity extends Activity {
                 float[] borders = bd.findBorders(abii);
 
                 drawView.setPoints(borders);
-                drawView.setImageBitmap(bwBmp);
-                drawView.setDrawGrids(true);
+                //drawView.setImageBitmap(bwBmp);
+                // Used for debug mode to see 31x31 grids
+                // drawView.setDrawGrids(true);
                 //----
 
-                //drawView.setImageBitmap(capturedBmp);
+                drawView.setImageBitmap(capturedBmp);
                 drawView.invalidate();
             } else if (resultCode == RESULT_CANCELED) {
                 // User cancelled the image capture
