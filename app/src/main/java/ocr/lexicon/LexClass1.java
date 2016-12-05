@@ -7,7 +7,7 @@ import utils.EditDistance;
  */
 public class LexClass1 {
     String[] Shops = {"SAFA", "SPAR", "BAZARSTORE", "BOLMART", "FAVORIT"};
-    String[] Voens = {"1403428411", "1001994141", "2000102651-17001", "6969696", "121212"};
+    String[] Voens = {"1403428411", "1001994141", "2000102651", "6969696", "121212"};
 
     EditDistance ed;
 

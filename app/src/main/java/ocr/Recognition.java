@@ -32,6 +32,8 @@ public class Recognition {
         NeuralNet, SVM,
     }
 
+    enum RecogPhase {AUTHOR_DETECTION, DATE_DETECTION, TIME_DETECTION, PRICE_DETECTION}
+
     public void init() {
         LabelManager.loadHashes("JML");
     }
@@ -69,8 +71,9 @@ public class Recognition {
         String[] resultText = new String[0];
         int colIdx = 0;
         LabelManager.LabelTypeEnum labelType;
-        boolean bDocTypeDefined = false;
         LexClass1 lexClass = new LexClass1();
+
+        RecogPhase recogPhase = RecogPhase.AUTHOR_DETECTION;
 
         try {
             File file = new File(Environment.getExternalStorageDirectory() + File.separator + formName + "_recognition.dat");
@@ -158,6 +161,24 @@ public class Recognition {
 
                                     // get label name by ID from the winner model
                                     wordText += LabelManager.getSymbol(labelType, (int) classId);
+
+                                    // Real-time analysis for DATE and TIME (for split case like "TARIHABCD")
+                                    if ((wordText != null) && (wordText.length() > 5)) {
+                                        if (recogPhase == RecogPhase.DATE_DETECTION) {
+                                            if (lexClass.isDate(wordText)) {
+                                                resultText[colIdx] += wordText + "(d)";
+                                                wordText = "";
+                                                labelType = LabelManager.LabelTypeEnum.DIGITS;
+                                            }
+
+                                        } else if (recogPhase == RecogPhase.TIME_DETECTION) {
+                                            if (lexClass.isTime(wordText)) {
+                                                resultText[colIdx] += wordText + "(t)";
+                                                wordText = "";
+                                                labelType = LabelManager.LabelTypeEnum.DIGITS;
+                                            }
+                                        }
+                                    }
                                 } catch (Exception ex) {
                                     Log.e(getClass().toString(), "recognize(): " + ex.getMessage());
                                 }
@@ -165,24 +186,46 @@ public class Recognition {
 
                             // Word is ready: check what it is
                             // 1) If document type is not defined, then try to find what type of document is this.
-                            if (!bDocTypeDefined) {
-                                String docTypeName = lexClass.defineDocAuthor(wordText);
-                                if (docTypeName != "") {
-                                    bDocTypeDefined = true;
-                                    wordText = docTypeName + "(1)";
-                                } else {
-                                    if (lexClass.isVOEN(wordText)) {
-                                        wordText += "(v)";
-                                        labelType = LabelManager.LabelTypeEnum.DIGITS;
-                                        // TODO : find a proper way to do this.
+                            if (recogPhase == RecogPhase.AUTHOR_DETECTION) {
+
+                                // First check if it's DIGITS (VOEN numbers)
+                                if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
+                                    Log.d(getClass().toString(), "VOEN: " + wordText);
+                                    String voenOwner = lexClass.defineDocAuthorbyVOEN(wordText);
+                                    if (voenOwner != "") {
+                                        wordText += "(" + voenOwner + ")";
+                                        labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                        recogPhase = RecogPhase.DATE_DETECTION;
                                     }
                                 }
-                            } else if (lexClass.isDate(wordText)) {
-                                wordText += "(2)";
-                                // switch to digits & symbols
-                            } else if (lexClass.isTime(wordText)) {
-                                wordText += "(3)";
-                                // switch to digits & symbols
+
+                                // If not DIGITS, then scan for AUTHOR or "VOEN" text
+                                else {
+                                    String docTypeName = lexClass.defineDocAuthor(wordText);
+                                    if (docTypeName != "") {
+                                        wordText = docTypeName + "(a)";
+                                    } else {
+                                        if (lexClass.isVOEN(wordText)) {
+                                            wordText += "(v)";
+                                            labelType = LabelManager.LabelTypeEnum.DIGITS;
+                                        }
+                                    }
+                                }
+                            }
+                            // 2) Try to find DATE and TIME
+                            else if (recogPhase == RecogPhase.DATE_DETECTION) {
+                                // Check for "TARIX" text
+                                if (labelType == LabelManager.LabelTypeEnum.CAPITAL) {
+                                    if (lexClass.isDate(wordText)) {
+                                        wordText += "(2)";
+                                        labelType = LabelManager.LabelTypeEnum.DIGITS;
+                                    }
+                                }
+                                // Get Date itself
+                                else {
+                                    wordText += "(d)";
+                                    labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                }
                             }
 
                             // word is finished, add space before the next word.
