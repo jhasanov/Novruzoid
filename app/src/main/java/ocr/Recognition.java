@@ -32,7 +32,7 @@ public class Recognition {
         NeuralNet, SVM,
     }
 
-    enum RecogPhase {AUTHOR_DETECTION, DATE_DETECTION, TIME_DETECTION, PRICE_DETECTION}
+    enum RecogPhase {AUTHOR_DETECTION, DATE_DETECTION, TIME_DETECTION, RECORD_DETECTION}
 
     public void init() {
         LabelManager.loadHashes("JML");
@@ -104,6 +104,7 @@ public class Recognition {
                     // In the start, recognize all symbols as capital
                     labelType = LabelManager.LabelTypeEnum.CAPITAL;
 
+
                     while (tlIt.hasNext()) {
                         // get key and value of the next text line
                         Integer tlKey = tlIt.next(); // ID of the text line
@@ -111,8 +112,17 @@ public class Recognition {
 
                         // Get words in current textline
                         TreeMap<Integer, Word> wordsMap = textLine.getWords();
+
                         //Iterate through the words
                         Iterator<Integer> wordsIt = wordsMap.keySet().iterator();
+
+                        // used to track the ITEM QUANTITY PRICE TOTAL sequence.
+                        // Starts with 0
+                        int recordWordCnt = 0;
+
+                        // start with Capital to find the item name.
+                        if (recogPhase == RecogPhase.RECORD_DETECTION)
+                            labelType = LabelManager.LabelTypeEnum.CAPITAL;
 
                         while (wordsIt.hasNext()) {
                             Integer wordKey = wordsIt.next();
@@ -173,7 +183,7 @@ public class Recognition {
                                     wordText += LabelManager.getSymbol(labelType, (int) classId);
 
                                     // Real-time analysis for DATE and TIME (for split case like "TARIHABCD")
-                                    if ((wordText != null) && (wordText.length() > 5)) {
+                                    if (labelType == LabelManager.LabelTypeEnum.CAPITAL) {
                                         if (recogPhase == RecogPhase.DATE_DETECTION) {
                                             if (lexClass.isDate(wordText)) {
                                                 resultText[colIdx] += wordText + "(d)";
@@ -194,6 +204,7 @@ public class Recognition {
                                 }
                             }
 
+                            // ----------------------------------------------------------------------------------
                             // Word is ready: check what it is
                             // 1) If document type is not defined, then try to find what type of document is this.
                             if (recogPhase == RecogPhase.AUTHOR_DETECTION) {
@@ -212,9 +223,14 @@ public class Recognition {
 
                                 // If not DIGITS, then scan for AUTHOR or "VOEN" text
                                 else {
-                                    String docTypeName = lexClass.defineDocAuthor(wordText);
+                                    String docTypeName = lexClass.defineDocAuthor(wordText.toUpperCase());
                                     if (docTypeName != "") {
                                         wordText = docTypeName + "(a)";
+
+                                        // If Author ( receipt issuer) is detected, then move to the DATE detection
+                                        // otherwise check the VOEN
+                                        labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                        recogPhase = RecogPhase.DATE_DETECTION;
                                     } else {
                                         if (lexClass.isVOEN(wordText)) {
                                             wordText += "(v)";
@@ -223,20 +239,34 @@ public class Recognition {
                                     }
                                 }
                             }
-                            // 2) Try to find DATE and TIME
+                            // 2) Try to find DATE value
                             else if (recogPhase == RecogPhase.DATE_DETECTION) {
-                                // Check for "TARIX" text
-                                if (labelType == LabelManager.LabelTypeEnum.CAPITAL) {
-                                    if (lexClass.isDate(wordText)) {
-                                        wordText += "(2)";
-                                        labelType = LabelManager.LabelTypeEnum.DIGITS;
+                                if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
+                                    // Parse date form text
+                                    wordText = wordText.replaceAll("[^0-9]", "");
+                                    wordText = lexClass.buildDate(wordText);
+                                    wordText += "(D)";
+
+                                    labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                    recogPhase = RecogPhase.TIME_DETECTION;
+                                }
+                            }
+                            // 2) Try to find TIME value
+                            else if (recogPhase == RecogPhase.TIME_DETECTION) {
+                                if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
+                                    // Parse date form text
+                                    wordText = wordText.replaceAll("[^0-9]", "");
+                                    if (wordText.length() > 2) {
+                                        wordText += "(T)";
+                                        labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                        recogPhase = RecogPhase.RECORD_DETECTION;
                                     }
                                 }
-                                // Get Date itself
-                                else {
-                                    wordText += "(d)";
-                                    labelType = LabelManager.LabelTypeEnum.CAPITAL;
-                                }
+                            }
+                            // switch point from CAPITAL to DIGIT in record detection
+                            else if (recogPhase == RecogPhase.RECORD_DETECTION) {
+                                if (recordWordCnt++ == 0)
+                                    labelType = LabelManager.LabelTypeEnum.DIGITS;
                             }
 
                             // word is finished, add space before the next word.

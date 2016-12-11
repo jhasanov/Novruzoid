@@ -65,4 +65,25 @@ public class LexClass1 {
         return dist < 2;
     }
 
+    /**
+     * This method analyzes the string and tries to find the date.
+     * Hypothesis:
+     * - analyze length. If length is >=8, then probably YEAR parameter is in 4-digit format.
+     * - analyze year value and position- it shall be greater than 2016 (in 4-digit) or 16(2-digit).
+     * - analyze the position of other values based on date value.
+     * - consider also current date (to understand the day and month values).
+     *
+     * @param dateInText String that contains only numbers. Sample: 05122016, 20160512, 051216.
+     * @return Date in DDMMYYYY format.
+     * <p/>
+     * TODO: Implement it.
+     */
+    public String buildDate(String dateInText) {
+        String dateString = "xxxxxxxx";
+
+        dateString = dateInText;
+
+        return dateString;
+    }
+
 }
