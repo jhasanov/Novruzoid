@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.NavigableSet;
 import java.util.TreeMap;
 
 import image.ImageTransform;
@@ -32,7 +33,7 @@ public class Recognition {
         NeuralNet, SVM,
     }
 
-    enum RecogPhase {AUTHOR_DETECTION, DATE_DETECTION, TIME_DETECTION, RECORD_DETECTION}
+    enum RecogPhase {AUTHOR_DETECTION, DATE_DETECTION, TIME_DETECTION, RECORD_DETECTION, TOTAL_DETECTION}
 
     public void init() {
         LabelManager.loadHashes("JML");
@@ -76,6 +77,13 @@ public class Recognition {
         int avgSymbolHpW = 0;
         // minimum size that symbol can have
         int minSymvolHpW = 0;
+        String dateText = "";
+        String timeText = "";
+        String itemDesc = "";
+        // This array will store Quantity, Price and Total
+        float[] quan_pri_tot = new float[3];
+        // Index of the quan_pri_tot array
+        int qpt_idx = 0;
 
         RecogPhase recogPhase = RecogPhase.AUTHOR_DETECTION;
 
@@ -84,6 +92,7 @@ public class Recognition {
             FileWriter fw = new FileWriter(file);
 
             loadModels(recModel, formName);
+
             // check if segmentation info is not empty
             if ((columnsMap != null) || (columnsMap.size() > 0)) {
                 resultText = new String[columnsMap.size()];
@@ -104,7 +113,6 @@ public class Recognition {
                     // In the start, recognize all symbols as capital
                     labelType = LabelManager.LabelTypeEnum.CAPITAL;
 
-
                     while (tlIt.hasNext()) {
                         // get key and value of the next text line
                         Integer tlKey = tlIt.next(); // ID of the text line
@@ -113,18 +121,29 @@ public class Recognition {
                         // Get words in current textline
                         TreeMap<Integer, Word> wordsMap = textLine.getWords();
 
+                        /*
+                         During RECORD detection, analyze text from back to front:
+                         1st 3 digits shall be TOTAL, PRICE and COUNT (order is reversed )
+                         The remaining part is the name of the item.
+                         */
+
+                        NavigableSet nKeySet;
+                        if (recogPhase == RecogPhase.RECORD_DETECTION) {
+                            quan_pri_tot = new float[3];
+                            qpt_idx = 2;
+                            labelType = LabelManager.LabelTypeEnum.DIGITS;
+                            nKeySet = wordsMap.descendingKeySet();
+                            resultText[colIdx] += "Reverse nKeySet size : " + nKeySet.size() + "\n";
+                        } else
+                            nKeySet = wordsMap.navigableKeySet();
+
                         //Iterate through the words
-                        Iterator<Integer> wordsIt = wordsMap.keySet().iterator();
+                        Iterator<Integer> wordsIt = nKeySet.iterator();
 
-                        // used to track the ITEM QUANTITY PRICE TOTAL sequence.
-                        // Starts with 0
-                        int recordWordCnt = 0;
-
-                        // start with Capital to find the item name.
-                        if (recogPhase == RecogPhase.RECORD_DETECTION)
-                            labelType = LabelManager.LabelTypeEnum.CAPITAL;
 
                         while (wordsIt.hasNext()) {
+                            if (recogPhase == RecogPhase.RECORD_DETECTION)
+                                resultText[colIdx] += "+";
                             Integer wordKey = wordsIt.next();
                             Word word = wordsMap.get(wordKey);
 
@@ -217,6 +236,7 @@ public class Recognition {
                                         wordText += "(" + voenOwner + ")";
                                         labelType = LabelManager.LabelTypeEnum.CAPITAL;
                                         recogPhase = RecogPhase.DATE_DETECTION;
+                                        dateText = "";
                                         minSymvolHpW = avgSymbolHpW / wordText.length();
                                     }
                                 }
@@ -231,6 +251,7 @@ public class Recognition {
                                         // otherwise check the VOEN
                                         labelType = LabelManager.LabelTypeEnum.CAPITAL;
                                         recogPhase = RecogPhase.DATE_DETECTION;
+                                        dateText = "";
                                     } else {
                                         if (lexClass.isVOEN(wordText)) {
                                             wordText += "(v)";
@@ -244,34 +265,66 @@ public class Recognition {
                                 if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
                                     // Parse date form text
                                     wordText = wordText.replaceAll("[^0-9]", "");
-                                    wordText = lexClass.buildDate(wordText);
-                                    wordText += "(D)";
+                                    dateText += lexClass.buildDate(wordText);
+
+                                    // this number will depend on receipt's date format
+                                    if (dateText.length() < 6) {
+                                        wordText = "";
+                                        continue;
+                                    }
+
+                                    wordText += " (" + dateText + ") ";
 
                                     labelType = LabelManager.LabelTypeEnum.CAPITAL;
                                     recogPhase = RecogPhase.TIME_DETECTION;
+                                    timeText = "";
                                 }
                             }
                             // 2) Try to find TIME value
                             else if (recogPhase == RecogPhase.TIME_DETECTION) {
                                 if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
                                     // Parse date form text
-                                    wordText = wordText.replaceAll("[^0-9]", "");
-                                    if (wordText.length() > 2) {
-                                        wordText += "(T)";
-                                        labelType = LabelManager.LabelTypeEnum.CAPITAL;
-                                        recogPhase = RecogPhase.RECORD_DETECTION;
+                                    timeText += wordText.replaceAll("[^0-9]", "");
+
+                                    // this number will depend on receipt's date format
+                                    if (timeText.length() < 4) {
+                                        wordText = "";
+                                        continue;
                                     }
+
+                                    wordText += " (" + timeText + ") ";
+                                    labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                    recogPhase = RecogPhase.RECORD_DETECTION;
                                 }
                             }
-                            // switch point from CAPITAL to DIGIT in record detection
-                            else if (recogPhase == RecogPhase.RECORD_DETECTION) {
-                                if (recordWordCnt++ == 0)
-                                    labelType = LabelManager.LabelTypeEnum.DIGITS;
+                            // check numbers in reverse order
+                            else if ((recogPhase == RecogPhase.RECORD_DETECTION)) {
+                                if (qpt_idx >= 0) { // item name
+                                    itemDesc = wordText + itemDesc;
+                                } else { // quan / price / total
+                                    wordText = wordText.replaceAll("[^,0-9]", "").replace(",", ".").replace("..", ".");
+
+                                    if (wordText.length() > 0) {
+                                        quan_pri_tot[qpt_idx--] = Float.parseFloat(wordText);
+                                        if (qpt_idx == -1) {
+                                            // Check if these 3 numbers are Quan, Price and Total.
+                                            if (Math.abs(quan_pri_tot[2] - (quan_pri_tot[1] * quan_pri_tot[0])) < 0.1) {
+                                                itemDesc = " : " + quan_pri_tot[0] + "/" + quan_pri_tot[1] + "/" + quan_pri_tot[2];
+                                                labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             // word is finished, add space before the next word.
                             resultText[colIdx] += wordText + " ";
                         }
+
+                        if (recogPhase == RecogPhase.RECORD_DETECTION) {
+                            resultText[colIdx] += " (" + itemDesc + ")";
+                        }
+
                         // line is ended, new line.
                         resultText[colIdx] += "\n";
                     }
@@ -283,6 +336,8 @@ public class Recognition {
 
         } catch (Exception ex) {
             Log.e(getClass().toString(), "recognize(): " + ex);
+            resultText[0] += "\n Exception: " + ex;
+            resultText[0] += "\n" + ex.getMessage();
         } finally {
             return resultText;
         }

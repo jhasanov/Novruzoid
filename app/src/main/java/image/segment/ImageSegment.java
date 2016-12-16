@@ -35,8 +35,8 @@ public class ImageSegment {
 
     private TreeMap<Integer, Column> columnsMap = new TreeMap<Integer, Column>();
     // minimal height of the textLines
-    private int MINIMUM_SYMBOL_HEIGHT = 3;
-    private int MAXIMUM_SYMBOL_HEIGHT = 300;
+    private int MINIMUM_SYMBOL_HEIGHT = 8;
+    private int MAXIMUM_SYMBOL_HEIGHT = 120;
     private ImageInfo imageInfo;
     public static int GRAY_THRES = 200;
     MultiMap newObjsMap = new MultiValueMap();
@@ -236,6 +236,7 @@ public class ImageSegment {
 
         TextImage.MIN_COLUMN_WIDTH = getImageInfo().getWidth() / 3;
         TextImage ti = new TextImage();
+        ti.setNoColumns(true);
 
         List<Rectangle> textAreas = ti.getTextAreas(getImageInfo());
 

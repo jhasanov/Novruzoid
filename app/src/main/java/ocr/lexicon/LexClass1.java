@@ -65,6 +65,12 @@ public class LexClass1 {
         return dist < 2;
     }
 
+    public boolean isTotal(String str) {
+        int dist = Math.min(ed.findDistance("YEKUN", str), ed.findDistance("TOPLAM", str));
+
+        return dist < 2;
+    }
+
     /**
      * This method analyzes the string and tries to find the date.
      * Hypothesis:

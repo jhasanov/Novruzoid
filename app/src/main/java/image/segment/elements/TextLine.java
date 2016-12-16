@@ -108,11 +108,17 @@ public class TextLine extends Element {
             if (bSymbolWidthBased) {
                 spaceWidth = Element.AVERAGE_SYMBOL_WIDTH;
             } else {
+                // TODO: Change this logic - Find adjacency gap (AG) between symbols. If gap is more then AG*2, then it's a space.
                 // getting average space width
                 // If space between symbols is more than avgSpace*1.5, then it's a word delimeter
-                int avgSpace = spaceInfo.get("AVERAGE_SPACE");
+
+                /*int avgSpace = spaceInfo.get("AVERAGE_SPACE");
                 int maxSpace = spaceInfo.get("MAXIMAL_SPACE");
                 spaceWidth = (maxSpace + avgSpace) / 2;
+                */
+
+                spaceWidth = spaceInfo.get("AVERAGE_SPACE");
+
             }
 
 

@@ -18,9 +18,16 @@ import utils.Rectangle;
 public class TextImage {
 
     public static double HORIZ_BORDER_THRES = 0.0;//0.05;
-    public static double COLUMN_BORDER_THRES = 0.0;//0.005;
+    public static double COLUMN_BORDER_THRES = 0.0;
     public static int MIN_COLUMN_WIDTH = 100;
     public static int MIN_COLUMN_SPACE = 20;
+
+    // If you don't need to have multiple columns, then set it to TRUE
+    private boolean bNoColumnsNeeded;
+
+    public void setNoColumns(boolean val) {
+        bNoColumnsNeeded = val;
+    }
 
     /**
      * Calculates a horizontal histogram for bit based images.
@@ -144,31 +151,33 @@ public class TextImage {
     public List<Integer> findColumns(ImageInfo imageInfo) {
         List<Integer> borders = new ArrayList<Integer>();
 
-        System.out.println("W in arrV : ("+imageInfo.getPixelArrV().length);
-        System.out.println("H in arrV : ("+imageInfo.getPixelArrV()[0].length);
         int[] horizHist = verticalBitHistogram(imageInfo.getPixelArrV());
-        System.out.println("horizHist elems : "+horizHist.length);
-        
         int height = horizHist.length;
         int maxVal = horizHist[0];
-        boolean bThresStarted = true;
 
-        for (int i = 1; i < height; i++) {
-            if (horizHist[i] <= maxVal * COLUMN_BORDER_THRES) {
-                if (!bThresStarted) {
-                    borders.add(i - 1);
-                    bThresStarted = true;
-                }
-            } else {
-                if (bThresStarted) {
-                    borders.add(i - 1);
-                }
-                bThresStarted = false;
-            }
-        }
-
-        if (!bThresStarted) {
+        if (bNoColumnsNeeded) {
+            borders.add(0);
             borders.add(height - 1);
+        } else {
+            boolean bThresStarted = true;
+
+            for (int i = 1; i < height; i++) {
+                if (horizHist[i] <= maxVal * COLUMN_BORDER_THRES) {
+                    if (!bThresStarted) {
+                        borders.add(i - 1);
+                        bThresStarted = true;
+                    }
+                } else {
+                    if (bThresStarted) {
+                        borders.add(i - 1);
+                    }
+                    bThresStarted = false;
+                }
+            }
+
+            if (!bThresStarted) {
+                borders.add(height - 1);
+            }
         }
         return borders;
     }
