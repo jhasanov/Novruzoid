@@ -217,7 +217,7 @@ public class ImageSegment {
         AndroidBinaryImageInfo abii = new AndroidBinaryImageInfo();
         Log.i(this.getClass().toString(), "conversion is finished");
 
-        abii.convertToPixelArr(image, 4, bSquareBased);
+        abii.convertToPixelArr(image, 1, bSquareBased);
         //bii.testIt();
         Log.i(this.getClass().toString(), "conversion is finished");
 

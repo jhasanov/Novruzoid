@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.TreeMap;
@@ -192,6 +193,13 @@ public class MainActivity extends Activity {
 
             //matrix.postScale((float) (1.0 / inSampleSize), (float) (1.0 / inSampleSize));
             croppedBitmap = Bitmap.createBitmap(bm, x, y, width, height, matrix, true);
+
+            // TESTING - Save cropped image to a file
+            File croppedBmpFile = new File(Environment.getExternalStorageDirectory(), "cropped.jpg");
+            FileOutputStream fos = new FileOutputStream(croppedBmpFile);
+            croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+            // ---------------
+
             //croppedBitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
         } catch (Exception ex) {
             Log.e(APP_NAME, ex.toString());

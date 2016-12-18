@@ -299,12 +299,12 @@ public class Recognition {
                             }
                             // check numbers in reverse order
                             else if ((recogPhase == RecogPhase.RECORD_DETECTION)) {
-                                if (qpt_idx >= 0) { // item name
-                                    itemDesc = wordText + itemDesc;
+                                if (qpt_idx < 0) { // item name
+                                    itemDesc = wordText + " " + itemDesc;
                                 } else { // quan / price / total
                                     wordText = wordText.replaceAll("[^,0-9]", "").replace(",", ".").replace("..", ".");
 
-                                    if (wordText.length() > 0) {
+                                    try {
                                         quan_pri_tot[qpt_idx--] = Float.parseFloat(wordText);
                                         if (qpt_idx == -1) {
                                             // Check if these 3 numbers are Quan, Price and Total.
@@ -313,6 +313,8 @@ public class Recognition {
                                                 labelType = LabelManager.LabelTypeEnum.CAPITAL;
                                             }
                                         }
+                                    } catch (Exception ex) {
+                                        Log.d(getClass().toString(), "RECORD_DETECTION: " + ex);
                                     }
                                 }
                             }

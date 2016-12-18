@@ -119,7 +119,6 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
         int imgPartHeight = colArr.length / width;
 
         try {
-
             int[][] thresArr = new int[width / SQUARE_SIZE][height / SQUARE_SIZE];
 
             /* The new arrays
@@ -128,7 +127,6 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
              * in pixelArrH array, the horizontal pixels grouped by 31
              * in pixelArrV array, the vertical pixels grouped by 31.
              */
-
 
             // this byte holds 31 pixel bits: 1 - black, 0 - white.
             int bitChunk = 0;
@@ -172,8 +170,6 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
 
                         }
                     }
-
-
 
                     // Setting values for vertical array
                     for (int x = 0; x < SQUARE_SIZE; x++) {
@@ -242,6 +238,7 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
              * in pixelArrH array, the horizontal pixels grouped by 31
              * in pixelArrV array, the vertical pixels grouped by 31.
              */
+
             pixelArrH = new int[(int) Math.ceil(width / 31.0)][height];
             pixelArrV = new int[width][(int) Math.ceil(height / 31.0)];
 
@@ -264,13 +261,9 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
                     //  Black pixel found.
                     if ((pixelArr[j * width + i] & 0xFF) < thres) {
                         bitChunk = bitChunk + (int) Math.pow(2, 30 - idx);
-                        //System.out.print('1');
                     }
-                    //else
-                    //System.out.print('0');
                     if ((idx == 30) || (i == width - 1)) {
                         pixelArrH[newIdx++][j] = bitChunk;
-                        //System.out.print(" -- "+bitChunk+"-"+Integer.toBinaryString(bitChunk)+ "; ");
                     }
                 }
             }
@@ -352,11 +345,11 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
 
                     if ((b & ybyte) == ybyte) {
                         //colors[j * w + xAxis] = Color.BLACK;
-                        bimg.setPixel(xAxis, j, Color.BLACK);
+                        bimg.setPixel(xAxis, j, Color.YELLOW);
                         
                     } else {
                         //colors[j * w + xAxis] = Color.WHITE;
-                        bimg.setPixel(xAxis, j, Color.WHITE);
+                        bimg.setPixel(xAxis, j, Color.BLUE);
                     }
                 }
             }
@@ -365,4 +358,5 @@ public class AndroidBinaryImageInfo extends ImageInfo implements AndroidImagePro
 //        Bitmap bimg = Bitmap.createBitmap(colors, w*31, h, Bitmap.Config.ARGB_8888);
         return bimg;
     }
+
 }

@@ -56,7 +56,7 @@ public class LexClass1 {
     public boolean isDate(String str) {
         int dist = Math.min(ed.findDistance("TARIH", str), ed.findDistance("TARIX", str));
 
-        return dist < 2;
+        return dist < 3;
     }
 
     public boolean isTime(String str) {
