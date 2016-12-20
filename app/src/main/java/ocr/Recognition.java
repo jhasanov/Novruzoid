@@ -73,10 +73,7 @@ public class Recognition {
         int colIdx = 0;
         LabelManager.LabelTypeEnum labelType;
         LexClass1 lexClass = new LexClass1();
-        // average of the (Height + Width) of symbols
-        int avgSymbolHpW = 0;
-        // minimum size that symbol can have
-        int minSymvolHpW = 0;
+
         String dateText = "";
         String timeText = "";
         String itemDesc = "";
@@ -129,6 +126,7 @@ public class Recognition {
 
                         NavigableSet nKeySet;
                         if (recogPhase == RecogPhase.RECORD_DETECTION) {
+                            itemDesc = "";
                             quan_pri_tot = new float[3];
                             qpt_idx = 2;
                             labelType = LabelManager.LabelTypeEnum.DIGITS;
@@ -151,7 +149,7 @@ public class Recognition {
                             //Iterate through the symbols
                             Iterator<Integer> smbIt = symbolsMap.keySet().iterator();
                             String wordText = "";
-                            avgSymbolHpW = 0;
+
                             while (smbIt.hasNext()) {
                                 try {
                                     Integer smbKey = smbIt.next();
@@ -164,11 +162,6 @@ public class Recognition {
                                     // 3) add 1 "ratio" feature
                                     // 3) convert 1D array to svmNodes
                                     int[][] pixels = symbol.getPixels();
-
-                                    avgSymbolHpW += pixels.length + pixels[0].length;
-
-                                    if (avgSymbolHpW < 0.25 * minSymvolHpW)
-                                        continue;
 
                                     // Get features from the pixel array
                                     ImageTransform imtrans = new ImageTransform();
@@ -237,7 +230,6 @@ public class Recognition {
                                         labelType = LabelManager.LabelTypeEnum.CAPITAL;
                                         recogPhase = RecogPhase.DATE_DETECTION;
                                         dateText = "";
-                                        minSymvolHpW = avgSymbolHpW / wordText.length();
                                     }
                                 }
 
@@ -311,6 +303,8 @@ public class Recognition {
                                             if (Math.abs(quan_pri_tot[2] - (quan_pri_tot[1] * quan_pri_tot[0])) < 0.1) {
                                                 itemDesc = " : " + quan_pri_tot[0] + "/" + quan_pri_tot[1] + "/" + quan_pri_tot[2];
                                                 labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                            } else {
+                                                itemDesc = "";
                                             }
                                         }
                                     } catch (Exception ex) {
