@@ -33,7 +33,7 @@ public class Recognition {
         NeuralNet, SVM,
     }
 
-    enum RecogPhase {AUTHOR_DETECTION, DATE_DETECTION, TIME_DETECTION, RECORD_DETECTION, TOTAL_DETECTION}
+    enum RecogPhase {AUTHOR_DETECTION, VOEN_NUMBER, DATE_DETECTION, TIME_DETECTION, RECORD_DETECTION, TOTAL_DETECTION}
 
     public void init() {
         LabelManager.loadHashes("JML");
@@ -74,6 +74,7 @@ public class Recognition {
         LabelManager.LabelTypeEnum labelType;
         LexClass1 lexClass = new LexClass1();
 
+        String voenNum = "";
         String dateText = "";
         String timeText = "";
         String itemDesc = "";
@@ -221,20 +222,8 @@ public class Recognition {
                             // 1) If document type is not defined, then try to find what type of document is this.
                             if (recogPhase == RecogPhase.AUTHOR_DETECTION) {
 
-                                // First check if it's DIGITS (VOEN numbers)
-                                if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
-                                    Log.d(getClass().toString(), "VOEN: " + wordText);
-                                    String voenOwner = lexClass.defineDocAuthorbyVOEN(wordText);
-                                    if (voenOwner != "") {
-                                        wordText += "(" + voenOwner + ")";
-                                        labelType = LabelManager.LabelTypeEnum.CAPITAL;
-                                        recogPhase = RecogPhase.DATE_DETECTION;
-                                        dateText = "";
-                                    }
-                                }
-
                                 // If not DIGITS, then scan for AUTHOR or "VOEN" text
-                                else {
+                                if (labelType == LabelManager.LabelTypeEnum.CAPITAL) {
                                     String docTypeName = lexClass.defineDocAuthor(wordText.toUpperCase());
                                     if (docTypeName != "") {
                                         wordText = docTypeName + "(a)";
@@ -247,12 +236,19 @@ public class Recognition {
                                     } else {
                                         if (lexClass.isVOEN(wordText)) {
                                             wordText += "(v)";
+                                            voenNum = "";
+                                            recogPhase = RecogPhase.VOEN_NUMBER;
                                             labelType = LabelManager.LabelTypeEnum.DIGITS;
                                         }
                                     }
                                 }
                             }
-                            // 2) Try to find DATE value
+                            // 3) Finding VOEN number
+                            else if (recogPhase == RecogPhase.VOEN_NUMBER) {
+                                voenNum += wordText;
+                            }
+
+                            // 4) Try to find DATE value
                             else if (recogPhase == RecogPhase.DATE_DETECTION) {
                                 if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
                                     // Parse date form text
@@ -272,7 +268,7 @@ public class Recognition {
                                     timeText = "";
                                 }
                             }
-                            // 2) Try to find TIME value
+                            // 5) Try to find TIME value
                             else if (recogPhase == RecogPhase.TIME_DETECTION) {
                                 if (labelType == LabelManager.LabelTypeEnum.DIGITS) {
                                     // Parse date form text
@@ -298,17 +294,20 @@ public class Recognition {
 
                                     try {
                                         quan_pri_tot[qpt_idx--] = Float.parseFloat(wordText);
-                                        if (qpt_idx == -1) {
-                                            // Check if these 3 numbers are Quan, Price and Total.
-                                            if (Math.abs(quan_pri_tot[2] - (quan_pri_tot[1] * quan_pri_tot[0])) < 0.1) {
-                                                itemDesc = " : " + quan_pri_tot[0] + "/" + quan_pri_tot[1] + "/" + quan_pri_tot[2];
-                                                labelType = LabelManager.LabelTypeEnum.CAPITAL;
-                                            } else {
-                                                itemDesc = "";
-                                            }
-                                        }
-                                    } catch (Exception ex) {
+                                    } catch (NumberFormatException ex) {
                                         Log.d(getClass().toString(), "RECORD_DETECTION: " + ex);
+                                        // when number is not known ( value is decreased by -1)
+                                        quan_pri_tot[qpt_idx + 1] = -1.0f;
+                                    }
+                                    if (qpt_idx == -1) {
+                                        // Check if these 3 numbers are Quan, Price and Total.
+                                        if ((quan_pri_tot[2] == -1) ||
+                                                (Math.abs(quan_pri_tot[2] - (quan_pri_tot[1] * quan_pri_tot[0])) < 1.0)) {
+                                            itemDesc = " : " + quan_pri_tot[0] + "/" + quan_pri_tot[1] + "/" + quan_pri_tot[2];
+                                            labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                        } else {
+                                            itemDesc = "";
+                                        }
                                     }
                                 }
                             }
@@ -317,8 +316,20 @@ public class Recognition {
                             resultText[colIdx] += wordText + " ";
                         }
 
+                        // line is done - post analysis
                         if (recogPhase == RecogPhase.RECORD_DETECTION) {
                             resultText[colIdx] += " (" + itemDesc + ")";
+                        } else if (recogPhase == RecogPhase.VOEN_NUMBER) {
+                            String voenOwner = lexClass.defineDocAuthorbyVOEN(voenNum.replaceAll(" ", ""));
+                            if (voenOwner != "") {
+                                resultText[colIdx] += "(" + voenOwner + ")";
+                                labelType = LabelManager.LabelTypeEnum.CAPITAL;
+                                recogPhase = RecogPhase.DATE_DETECTION;
+                                dateText = "";
+                            } else {
+                                resultText[colIdx] += "(" + voenNum + ")";
+                            }
+
                         }
 
                         // line is ended, new line.
